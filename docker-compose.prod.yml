@@ -65,7 +65,7 @@ services:
       FRONTEND_REVALIDATE_URL: http://frontend:3000/_internal/revalidate
     ports:
       # Optional: lets nginx send /api/ and /media/ straight to the backend.
-      - "127.0.0.1:${BACKEND_HOST_PORT:-8060}:8080"
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8070}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,7 +84,7 @@ services:
       NUXT_PUBLIC_GTM_ID: ${NUXT_PUBLIC_GTM_ID:-}
       NUXT_PUBLIC_SECURITY_CONTACT: ${SECURITY_CONTACT}
     ports:
-      - "127.0.0.1:${FRONTEND_HOST_PORT:-3060}:3000"
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-3070}:3000"
     depends_on:
       - backend
     mem_limit: 512m
