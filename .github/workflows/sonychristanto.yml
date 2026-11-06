@@ -171,6 +171,7 @@ jobs:
             echo "GHCR_OWNER='${GITHUB_REPOSITORY_OWNER,,}'"
             echo "IMAGE_TAG='${GITHUB_SHA}'"
           } >> .env
+          chmod 644 .env
           mv docker-compose.prod.yml docker-compose.yml
           echo "Generated .env with $(grep -c '=' .env) keys"
 
