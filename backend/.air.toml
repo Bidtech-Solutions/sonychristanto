@@ -1,0 +1,12 @@
+root = "."
+tmp_dir = "/tmp/air"
+
+[build]
+  cmd = "go build -tags nodynamic -o /tmp/air/server ./cmd/server"
+  entrypoint = ["/tmp/air/server"]
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "vendor"]
+  delay = 500
+
+[log]
+  time = false

@@ -1,0 +1,95 @@
+# Production on the shared VPS. Images are built by GitHub Actions and pulled
+# from GHCR — nothing is built on the server. Deployed by
+# .github/workflows/sonychristanto.yml into $VPS_DEPLOY_PATH together with a
+# .env generated from .env.prod.example + GitHub secrets.
+#
+# The fixed project name keeps volume names stable (sonychristanto_pg_data,
+# sonychristanto_rustfs_data). Changing it would make Postgres and RustFS
+# start on NEW, empty volumes.
+name: sonychristanto
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: Asia/Jakarta
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 384m
+    logging: *logging
+
+  # Object storage for uploaded images. Private to this project: the S3 port
+  # is NOT published; only the backend reaches it on the compose network.
+  rustfs:
+    image: rustfs/rustfs:1.0.4 # pinned; bump deliberately after reading release notes
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY}
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      # Web console for admins only, via SSH tunnel:
+      #   ssh -L 9011:127.0.0.1:9011 deploy@<vps>  ->  http://localhost:9011/rustfs/console/
+      - "127.0.0.1:${RUSTFS_CONSOLE_HOST_PORT:-9011}:9001"
+    volumes:
+      - rustfs_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 256m
+    logging: *logging
+
+  backend:
+    image: ghcr.io/${GHCR_OWNER}/sonychristanto-backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: production
+      FRONTEND_REVALIDATE_URL: http://frontend:3000/_internal/revalidate
+    ports:
+      # Optional: lets nginx send /api/ and /media/ straight to the backend.
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8060}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rustfs:
+        condition: service_healthy
+    mem_limit: 256m
+    logging: *logging
+
+  frontend:
+    image: ghcr.io/${GHCR_OWNER}/sonychristanto-frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      NUXT_API_INTERNAL_URL: http://backend:8080
+      NUXT_REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      NUXT_PUBLIC_SITE_URL: ${SITE_URL}
+      NUXT_PUBLIC_GTM_ID: ${NUXT_PUBLIC_GTM_ID:-}
+      NUXT_PUBLIC_SECURITY_CONTACT: ${SECURITY_CONTACT}
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-3060}:3000"
+    depends_on:
+      - backend
+    mem_limit: 512m
+    logging: *logging
+
+volumes:
+  pg_data:
+  rustfs_data:

@@ -1,0 +1,212 @@
+# CI/CD sonychristanto.com
+#
+#   test ──► build (backend, frontend) ──► GHCR ──► deploy ──► VPS
+#            └─ bundle (docker-compose.prod.yml + .env.prod.example) ─┘ (artifact)
+#
+# - Images are built on the GitHub runner, never on the VPS.
+# - GHCR login uses the built-in GITHUB_TOKEN + github.actor: no extra secret.
+# - .env is generated on the runner from .env.prod.example: every KEY whose
+#   name matches a repository secret gets that secret's value.
+# - Required secrets: see the separate "GitHub secrets" document (ops bundle).
+
+name: sonychristanto
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: sonychristanto-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  test-backend:
+    name: Test backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - run: test -z "$(gofmt -l .)" || (gofmt -l . && echo "Run gofmt -w ." && exit 1)
+      - run: go vet -tags nodynamic ./...
+      - run: go test -tags nodynamic ./...
+
+  test-frontend:
+    name: Test frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+
+  build:
+    name: Build ${{ matrix.service }} image
+    needs: [test-backend, test-frontend]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      # GHCR image names must be lowercase (the org is "Bidtech-Solutions").
+      - name: Image name
+        id: img
+        run: echo "name=${REGISTRY}/${GITHUB_REPOSITORY_OWNER,,}/sonychristanto-${{ matrix.service }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          target: runtime
+          push: true
+          tags: |
+            ${{ steps.img.outputs.name }}:${{ github.sha }}
+            ${{ steps.img.outputs.name }}:latest
+          # Prerendered pages need these at BUILD time (ignored by the backend image).
+          build-args: |
+            NUXT_PUBLIC_SITE_URL=${{ secrets.SITE_URL || 'https://sonychristanto.com' }}
+            NUXT_PUBLIC_GTM_ID=${{ secrets.NUXT_PUBLIC_GTM_ID || 'GTM-5FC5K5DH' }}
+            NUXT_PUBLIC_SECURITY_CONTACT=${{ secrets.SECURITY_CONTACT || 'mailto:security@sonychristanto.com' }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  bundle:
+    name: Bundle deploy files
+    needs: [test-backend, test-frontend]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deploy-bundle
+          path: |
+            docker-compose.prod.yml
+            .env.prod.example
+          include-hidden-files: true
+          retention-days: 7
+
+  deploy:
+    name: Deploy to VPS
+    needs: [build, bundle]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: sonychristanto-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: deploy-bundle
+          path: bundle
+
+      - name: Generate .env from .env.prod.example + secrets
+        working-directory: bundle
+        env:
+          SECRETS_JSON: ${{ toJSON(secrets) }}
+        run: |
+          set -euo pipefail
+          umask 077
+          : > .env
+          missing=()
+          while IFS= read -r line || [ -n "$line" ]; do
+            if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "${line//[[:space:]]/}" ]]; then
+              echo "$line" >> .env; continue
+            fi
+            key="${line%%=*}"; default="${line#*=}"
+            value=$(jq -r --arg k "$key" '.[$k] // empty' <<<"$SECRETS_JSON")
+            [ -z "$value" ] && value="$default"
+            if [ "$value" = "__SECRET__" ]; then missing+=("$key"); continue; fi
+            if [[ "$value" == *"'"* || "$value" == *$'\n'* ]]; then
+              echo "::error::Secret $key must not contain a single quote or newline"; exit 1
+            fi
+            # Single quotes: docker compose takes the value literally (no $ interpolation).
+            printf "%s='%s'\n" "$key" "$value" >> .env
+          done < .env.prod.example
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing repository secrets: ${missing[*]}"; exit 1
+          fi
+          {
+            echo "GHCR_OWNER='${GITHUB_REPOSITORY_OWNER,,}'"
+            echo "IMAGE_TAG='${GITHUB_SHA}'"
+          } >> .env
+          mv docker-compose.prod.yml docker-compose.yml
+          echo "Generated .env with $(grep -c '=' .env) keys"
+
+      - name: Upload files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: "bundle/docker-compose.yml,bundle/.env"
+          target: ${{ secrets.VPS_DEPLOY_PATH || '/opt/sonychristanto' }}
+          strip_components: 1
+          overwrite: true
+
+      - name: Pull images and restart
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH || '/opt/sonychristanto' }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          envs: DEPLOY_PATH,GHCR_USER,GHCR_TOKEN
+          command_timeout: 15m
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+            chmod 600 .env
+            # The job token is only valid during this run — log in, pull, log out.
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            docker compose pull
+            docker logout ghcr.io
+            docker compose up -d --remove-orphans --wait --wait-timeout 180
+            docker compose ps
+            docker image prune -f --filter "label=org.opencontainers.image.source" >/dev/null || true
