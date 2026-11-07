@@ -2,10 +2,11 @@
 import { publications, publicationTypeLabel } from '~/data/publications'
 
 const route = useRoute()
+const { t, tx, lp } = useL()
 const pub = publications.find((p) => p.slug === route.params.slug)
-if (!pub) throw createError({ statusCode: 404, statusMessage: 'Karya tulis tidak ditemukan', fatal: true })
+if (!pub) throw createError({ statusCode: 404, statusMessage: t('error.notFound'), fatal: true })
 
-usePageSeo({ title: pub.title, description: pub.abstract.slice(0, 160), path: `/karya-tulis/${pub.slug}`, type: 'article' })
+usePageSeo({ title: pub.title, description: tx(pub.abstract).slice(0, 160), path: `/karya-tulis/${pub.slug}`, type: 'article' })
 // Google Scholar reads citation_* meta tags.
 useHead({
   meta: [
@@ -23,7 +24,7 @@ useJsonLd({
   name: pub.title,
   headline: pub.title,
   datePublished: String(pub.year),
-  abstract: pub.abstract,
+  abstract: tx(pub.abstract),
   keywords: pub.keywords?.join(', '),
   author: pub.authors.map((a) => (a === 'Sony Christanto' ? { '@id': personId(siteUrl) } : { '@type': 'Person', name: a })),
   isPartOf: pub.venue ? { '@type': 'Periodical', name: pub.venue } : undefined,
@@ -33,23 +34,25 @@ useJsonLd({
 </script>
 
 <template>
-  <div v-if="pub">
+  <div v-if="pub" class="page-root">
     <PageHero
-      :eyebrow="publicationTypeLabel[pub.type]"
-      :title="pub.title"
+      size="md"
+      :lines="[pub.title]"
       :lead="[pub.authors.join(', '), pub.venue, pub.year].filter(Boolean).join(' · ')"
-      :crumbs="[{ name: 'Karya Tulis', path: '/karya-tulis' }, { name: pub.title, path: `/karya-tulis/${pub.slug}` }]"
-    />
-    <section class="container-page max-w-3xl py-16">
-      <h2 class="font-display text-2xl font-semibold">Abstrak</h2>
-      <p class="prose-article mt-4">{{ pub.abstract }}</p>
-      <p v-if="pub.keywords?.length" class="mt-6 text-ink-600"><strong>Kata kunci:</strong> {{ pub.keywords.join(', ') }}</p>
-      <div class="mt-10 flex flex-wrap gap-4">
-        <a v-if="pub.doi" :href="`https://doi.org/${pub.doi}`" class="btn-dark" target="_blank" rel="noopener">Buka via DOI</a>
-        <a v-else-if="pub.url" :href="pub.url" class="btn-dark" target="_blank" rel="noopener">Baca selengkapnya</a>
-        <a v-if="pub.pdf" :href="pub.pdf" class="btn-outline" download>Unduh PDF</a>
+      :crumbs="[{ name: t('writings.title'), path: '/karya-tulis' }, { name: pub.title, path: `/karya-tulis/${pub.slug}` }]"
+    >
+      <span data-reveal class="label-sm self-start rounded-full bg-signal-tint px-3 py-1.5 text-signal-ink">{{ tx(publicationTypeLabel[pub.type]) }}</span>
+    </PageHero>
+    <section class="sec flex max-w-3xl flex-col gap-8">
+      <h2 data-reveal class="h2-display text-[34px]">{{ t('writings.abstract') }}</h2>
+      <p data-reveal class="prose-article m-0">{{ tx(pub.abstract) }}</p>
+      <p v-if="pub.keywords?.length" data-reveal class="m-0 text-ink-soft"><strong class="label-sm text-ink">{{ t('writings.keywords') }}:</strong> {{ pub.keywords.join(', ') }}</p>
+      <div class="flex flex-wrap gap-3" data-reveal>
+        <a v-if="pub.doi" :href="`https://doi.org/${pub.doi}`" class="btn-ink" target="_blank" rel="noopener">DOI <span class="text-signal">↗</span></a>
+        <a v-else-if="pub.url" :href="pub.url" class="btn-ink" target="_blank" rel="noopener">{{ t('writings.fullText') }} <span class="text-signal">↗</span></a>
+        <a v-if="pub.pdf" :href="pub.pdf" class="btn-line" download>{{ t('writings.download') }}</a>
       </div>
-      <NuxtLink to="/karya-tulis" class="mt-12 inline-block font-semibold text-navy-700 underline underline-offset-4">← Semua karya tulis</NuxtLink>
+      <NuxtLink :to="lp('/karya-tulis')" class="btn-line self-start">← {{ t('writings.back') }}</NuxtLink>
     </section>
   </div>
 </template>

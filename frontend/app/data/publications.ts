@@ -1,6 +1,8 @@
 // Modul Karya Tulis — static content (mostly scientific articles).
 // No data from the client yet. Detail pages emit ScholarlyArticle JSON-LD.
 
+import type { L } from './i18n'
+
 export type PublicationType = 'artikel-ilmiah' | 'buku' | 'opini' | 'lainnya'
 
 export interface Publication {
@@ -15,15 +17,15 @@ export interface Publication {
   doi?: string
   url?: string // external link to the full text
   pdf?: string // /files/karya-tulis/<slug>.pdf when the client permits hosting it
-  abstract: string
+  abstract: L // abstrak; bila hanya satu bahasa, isi keduanya dengan teks yang sama
   keywords?: string[]
 }
 
-export const publicationTypeLabel: Record<PublicationType, string> = {
-  'artikel-ilmiah': 'Artikel ilmiah',
-  buku: 'Buku',
-  opini: 'Opini',
-  lainnya: 'Lainnya',
+export const publicationTypeLabel: Record<PublicationType, L> = {
+  'artikel-ilmiah': { id: 'Artikel ilmiah', en: 'Scholarly article' },
+  buku: { id: 'Buku', en: 'Book' },
+  opini: { id: 'Opini', en: 'Opinion' },
+  lainnya: { id: 'Lainnya', en: 'Other' },
 }
 
 export const publications: Publication[] = [
@@ -36,7 +38,7 @@ export const publications: Publication[] = [
   //   authors: ['Sony Christanto'],
   //   venue: 'Nama Jurnal',
   //   doi: '10.xxxx/xxxxx',
-  //   abstract: 'Abstrak singkat.',
+  //   abstract: { id: 'Abstrak singkat.', en: 'Short abstract.' },
   //   keywords: ['pendidikan', 'Batam'],
   // },
 ]

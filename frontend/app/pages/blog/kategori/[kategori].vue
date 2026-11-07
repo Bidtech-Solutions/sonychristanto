@@ -2,22 +2,16 @@
 import { categories } from '~/data/site'
 
 const route = useRoute()
+const { t, tx, locale } = useL()
 const category = categories.find((c) => c.key === route.params.kategori)
-if (!category) throw createError({ statusCode: 404, statusMessage: 'Kategori tidak ditemukan', fatal: true })
+if (!category) throw createError({ statusCode: 404, statusMessage: t('error.notFound'), fatal: true })
 
-usePageSeo({ title: category.label, description: category.description, path: `/blog/kategori/${category.key}` })
+usePageSeo({ title: tx(category.label), description: tx(category.description), path: `/blog/kategori/${category.key}`, noindex: locale.value === 'en', canonicalLocale: 'id' })
 </script>
 
 <template>
-  <div v-if="category">
-    <PageHero
-      eyebrow="Kategori"
-      :title="category.label"
-      :lead="category.description"
-      :crumbs="[{ name: 'Blog', path: '/blog' }, { name: category.label, path: `/blog/kategori/${category.key}` }]"
-    />
-    <section class="container-page py-16">
-      <BlogListing :category="category.key" />
-    </section>
+  <div v-if="category" class="page-root">
+    <BlogMasthead :title="tx(category.label)" :lead="tx(category.description)" :crumbs="[{ name: t('blog.title'), path: '/blog' }, { name: tx(category.label), path: `/blog/kategori/${category.key}` }]" />
+    <BlogListing :category="category.key" />
   </div>
 </template>

@@ -2,7 +2,7 @@
 import { categories } from '~/data/site'
 import type { AdminArticle, Envelope, PageMeta } from '~/types/api'
 
-definePageMeta({ layout: 'dashboard', middleware: 'auth' })
+definePageMeta({ layout: 'dashboard', middleware: 'auth', i18n: false })
 useHead({ title: 'Artikel' })
 
 const api = useAdminApi()
@@ -62,7 +62,7 @@ async function act(a: AdminArticle, action: 'publish' | 'unpublish' | 'delete') 
     message.value = Object.keys(fields).length ? `Belum bisa terbit: ${Object.values(fields).join('; ')}` : apiErrorMessage(e)
   }
 }
-const categoryLabel = (k?: string | null) => categories.find((c) => c.key === k)?.label ?? '—'
+const categoryLabel = (k?: string | null) => categories.find((c) => c.key === k)?.label.id ?? '—'
 </script>
 
 <template>
@@ -85,7 +85,7 @@ const categoryLabel = (k?: string | null) => categories.find((c) => c.key === k)
       <label class="sr-only" for="category">Kategori</label>
       <select id="category" v-model="filters.category" class="field-input w-auto">
         <option value="">Semua kategori</option>
-        <option v-for="c in categories" :key="c.key" :value="c.key">{{ c.label }}</option>
+        <option v-for="c in categories" :key="c.key" :value="c.key">{{ c.label.id }}</option>
       </select>
     </div>
 
@@ -113,7 +113,7 @@ const categoryLabel = (k?: string | null) => categories.find((c) => c.key === k)
             <td class="p-4 text-sm text-ink-600">{{ formatDateTime(a.draft.updated_at) }}</td>
             <td class="p-4">
               <div class="flex justify-end gap-3 text-sm">
-                <a v-if="a.status === 'published'" :href="`/blog/${a.slug}`" target="_blank" class="underline">Lihat</a>
+                <a v-if="a.status === 'published'" :href="`/id/blog/${a.slug}`" target="_blank" class="underline">Lihat</a>
                 <button v-if="a.status !== 'published' || a.has_unpublished_changes" type="button" class="underline" @click="act(a, 'publish')">Terbitkan</button>
                 <button v-if="a.status === 'published'" type="button" class="underline" @click="act(a, 'unpublish')">Nonaktifkan</button>
                 <button type="button" class="text-red-700 underline" @click="act(a, 'delete')">Hapus</button>

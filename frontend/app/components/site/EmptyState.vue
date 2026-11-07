@@ -1,11 +1,13 @@
 <script setup lang="ts">
-defineProps<{ title: string; text?: string }>()
+// "Segera hadir" card (DESIGN.md §6): stone, dashed border, small light-grid mark.
+defineProps<{ title?: string; text: string }>()
+const { t } = useL()
 </script>
 
 <template>
-  <div class="border border-dashed border-navy-200 px-6 py-14 text-center">
-    <p class="font-display text-2xl font-semibold">{{ title }}</p>
-    <p v-if="text" class="mx-auto mt-2 max-w-md text-ink-600">{{ text }}</p>
-    <slot />
+  <div data-reveal class="flex flex-col items-start gap-4 rounded-[20px] border-2 border-dashed border-stone-deep bg-stone p-8 md:p-10">
+    <span aria-hidden="true" class="grid grid-cols-3 gap-1 opacity-80"><span v-for="i in 6" :key="i" class="size-2.5 rounded-[3px] bg-signal" /></span>
+    <span class="label-sm text-signal-ink">{{ title || t('common.comingSoon') }}</span>
+    <p class="max-w-lg text-ink-soft">{{ text }}</p>
   </div>
 </template>

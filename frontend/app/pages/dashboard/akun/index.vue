@@ -3,7 +3,7 @@
 // the superadmin cannot be changed here; nobody can deactivate/delete themselves.
 import type { Admin, Envelope } from '~/types/api'
 
-definePageMeta({ layout: 'dashboard', middleware: 'auth' })
+definePageMeta({ layout: 'dashboard', middleware: 'auth', i18n: false })
 useHead({ title: 'Kelola akun' })
 
 const api = useAdminApi()

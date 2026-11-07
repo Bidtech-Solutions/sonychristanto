@@ -4,7 +4,7 @@
 import { categories } from '~/data/site'
 import type { AdminArticle, Block, Envelope } from '~/types/api'
 
-definePageMeta({ layout: 'dashboard', middleware: 'auth' })
+definePageMeta({ layout: 'dashboard', middleware: 'auth', i18n: false })
 
 const route = useRoute()
 const api = useAdminApi()
@@ -208,7 +208,7 @@ const isPublished = computed(() => article.value?.status === 'published')
           <span class="text-sm text-ink-600" aria-live="polite">{{ saveLabel }}</span>
         </div>
         <div class="flex flex-wrap gap-2">
-          <a v-if="isPublished" :href="`/blog/${article.slug}`" target="_blank" class="btn-outline">Lihat</a>
+          <a v-if="isPublished" :href="`/id/blog/${article.slug}`" target="_blank" class="btn-outline">Lihat</a>
           <button v-if="article.has_unpublished_changes" type="button" class="btn-outline" :disabled="busy" @click="discard">Buang perubahan</button>
           <button v-if="isPublished" type="button" class="btn-outline" :disabled="busy" @click="unpublish">Nonaktifkan</button>
           <button type="button" class="btn-primary" :disabled="busy || saveState === 'conflict'" @click="publish">
@@ -235,7 +235,7 @@ const isPublished = computed(() => article.value?.status === 'published')
             <label for="category" class="field-label">Kategori</label>
             <select id="category" v-model="form.category" class="field-input">
               <option value="">Pilih kategori</option>
-              <option v-for="c in categories" :key="c.key" :value="c.key">{{ c.label }}</option>
+              <option v-for="c in categories" :key="c.key" :value="c.key">{{ c.label.id }}</option>
             </select>
             <p v-if="fieldErrors.category" class="field-error">{{ fieldErrors.category }}</p>
           </div>

@@ -54,7 +54,7 @@ const imageWidth = (b: Block) => (b.props?.previewWidth ? Math.round(Number(b.pr
 
       <blockquote v-else-if="g.block.type === 'quote'"><InlineContent :nodes="g.block.content" /></blockquote>
 
-      <hr v-else-if="g.block.type === 'divider'" class="border-cream-300" />
+      <hr v-else-if="g.block.type === 'divider'" />
 
       <figure v-else-if="g.block.type === 'image' && g.block.props?.url" class="my-8">
         <img
@@ -65,11 +65,11 @@ const imageWidth = (b: Block) => (b.props?.previewWidth ? Math.round(Number(b.pr
           decoding="async"
           class="mx-auto h-auto max-w-full"
         />
-        <figcaption v-if="g.block.props.caption" class="mt-2 text-center text-sm text-ink-600">{{ g.block.props.caption }}</figcaption>
+        <figcaption v-if="g.block.props.caption" class="mt-2.5">{{ g.block.props.caption }}</figcaption>
       </figure>
 
-      <div v-else-if="g.block.type === 'columnList'" class="grid gap-8 md:grid-cols-2">
-        <div v-for="col in g.block.children" :key="col.id" class="prose-article">
+      <div v-else-if="g.block.type === 'columnList'" class="cols2 grid gap-7 md:grid-cols-2">
+        <div v-for="col in g.block.children" :key="col.id" class="[&>*+*]:mt-4">
           <BlockRenderer :blocks="col.children" />
         </div>
       </div>

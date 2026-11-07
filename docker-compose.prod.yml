@@ -44,7 +44,7 @@ services:
       RUSTFS_CONSOLE_ENABLE: "true"
     ports:
       # Web console for admins only, via SSH tunnel:
-      #   ssh -L 9011:127.0.0.1:9011 deploy@<vps>  ->  http://localhost:9011/rustfs/console/
+      #   ssh -L 9011:127.0.0.1:9011 root@<vps>  ->  http://localhost:9011/rustfs/console/
       - "127.0.0.1:${RUSTFS_CONSOLE_HOST_PORT:-9011}:9001"
     volumes:
       - rustfs_data:/data

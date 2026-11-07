@@ -1,112 +1,317 @@
 @import "tailwindcss";
 
-/* Design tokens — keep in sync with docs/DESIGN.md */
-@theme {
-  --color-navy-950: #071235;
-  --color-navy-900: #0a1a44;
-  --color-navy-800: #14275f;
-  --color-navy-700: #2a3d7a;
-  --color-navy-200: #b8c2e0;
-  --color-navy-100: #d5dcf0;
-  --color-gold-500: #f2c230;
-  --color-gold-700: #7a5c00;
-  --color-cream-100: #f6f4ee;
-  --color-cream-300: #e3dfd3;
-  --color-ink-600: #4a5370;
+/* Self-hosted variable fonts (no Google CDN). Archivo carries the width axis
+   (wdth 62–125) used for the "semi-expanded" display face. */
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/newsreader";
+@import "@fontsource-variable/newsreader/wght-italic.css";
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Playfair Display", Georgia, serif;
+/* ------------------------------------------------------------------------
+   Design tokens — "Editorial Signal — Light" (docs/DESIGN.md §2–4)
+   ------------------------------------------------------------------------ */
+@theme {
+  --color-paper: #f4f3f0;
+  --color-stone: #e8e6e1;
+  --color-stone-deep: #d8d5cf;
+  --color-stone-ghost: #dedbd5;
+  --color-ink: #0b0b0b;
+  --color-ink-soft: #5c5a56;
+  --color-ink-body: #3a3936;
+  --color-ink-ghost: #b4b1ab;
+  --color-signal: #e10600;
+  --color-signal-ink: #c00000;
+  --color-signal-tint: #fce9e7;
+
+  /* Legacy names still used by the dashboard, remapped to the new palette. */
+  --color-navy-950: #000000;
+  --color-navy-900: #0b0b0b;
+  --color-navy-800: #2a2927;
+  --color-navy-700: #5c5a56;
+  --color-navy-200: #b4b1ab;
+  --color-navy-100: #d8d5cf;
+  --color-gold-500: #e10600;
+  --color-gold-700: #c00000;
+  --color-cream-100: #f4f3f0;
+  --color-cream-300: #d8d5cf;
+  --color-ink-600: #5c5a56;
+
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo Variable", "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Newsreader Variable", "Newsreader", Georgia, serif;
+
+  --radius-panel: 28px;
+  --radius-card: 20px;
+  --radius-img: 14px;
+
+  --ease-signal: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-floaty: floaty 6s ease-in-out infinite;
+  --animate-pin: pinpulse 2.2s ease-out infinite;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes pinpulse {
+    0% { transform: scale(1); opacity: 0.55; }
+    100% { transform: scale(3.2); opacity: 0; }
+  }
 }
 
 @layer base {
   html {
-    scroll-behavior: smooth;
+    background: var(--color-paper);
+    -webkit-text-size-adjust: 100%;
   }
+  /* Lenis drives smooth scrolling; native smooth-scroll would fight it. */
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+  .lenis.lenis-stopped { overflow: hidden; }
+
   body {
-    @apply bg-white font-sans text-navy-900 antialiased;
-    font-size: 17px;
-    line-height: 1.65;
+    @apply bg-paper font-sans text-ink antialiased;
+    font-size: 16px;
+    line-height: 1.6;
+    font-optical-sizing: auto;
   }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--color-signal); color: #fff; }
   :focus-visible {
-    outline: 3px solid var(--color-gold-500);
+    outline: 2px solid var(--color-signal);
     outline-offset: 2px;
+    border-radius: 4px;
   }
+  [id] { scroll-margin-top: 110px; }
 }
 
+/* ------------------------------------------------------------------------
+   Type
+   ------------------------------------------------------------------------ */
+@utility font-display-x {
+  /* Archivo semi-expanded, uppercase display */
+  font-family: var(--font-display);
+  font-stretch: 118%;
+  font-variation-settings: "wdth" 118;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+@utility font-display-m {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-variation-settings: "wdth" 112;
+}
+@utility label {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+@utility label-sm {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+@utility eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-signal-ink);
+}
+@utility h2-display {
+  @apply font-display-x m-0 font-semibold;
+  font-size: clamp(34px, 4.2vw, 56px);
+  line-height: 0.92;
+}
+
+/* ------------------------------------------------------------------------
+   Layout: panels inset 16px from the viewport (DESIGN.md §4)
+   ------------------------------------------------------------------------ */
+@utility page-wrap {
+  @apply mx-auto flex w-full max-w-[1440px] flex-col items-center gap-4 p-2.5 md:p-4;
+}
+@utility panel {
+  @apply relative w-full max-w-[1408px] overflow-hidden rounded-[24px] md:rounded-[28px];
+}
+@utility sec {
+  @apply w-full max-w-[1408px] px-5 py-10 md:px-10 md:py-[72px];
+}
+
+/* ------------------------------------------------------------------------
+   Buttons (pill)
+   ------------------------------------------------------------------------ */
+@utility btn {
+  @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full px-6 text-[13px] font-semibold uppercase tracking-[0.08em] transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-50;
+  transition-timing-function: var(--ease-signal);
+}
+@utility btn-signal {
+  @apply btn h-13 bg-signal text-white hover:bg-ink;
+}
+@utility btn-ink {
+  @apply btn h-13 bg-ink text-paper hover:bg-signal;
+}
+@utility btn-line {
+  @apply btn h-13 border-[1.5px] border-ink text-ink hover:bg-ink hover:text-paper;
+}
+@utility btn-line-paper {
+  @apply btn h-13 border-[1.5px] border-paper text-paper hover:bg-paper hover:text-ink;
+}
+
+/* Legacy (dashboard) buttons & fields */
 @utility container-page {
   @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
 }
-
-@utility eyebrow {
-  @apply text-[13px] font-semibold uppercase tracking-[0.14em] text-gold-700;
-}
-
 @utility heading-xl {
-  @apply font-display text-4xl leading-tight font-semibold sm:text-5xl;
+  @apply font-display-x text-4xl leading-tight font-semibold sm:text-5xl;
 }
-
-@utility btn {
-  @apply inline-flex min-h-11 items-center justify-center gap-2 px-6 text-[15px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
-}
-
 @utility btn-primary {
-  @apply btn bg-gold-500 text-navy-900 hover:bg-[#e0b020];
+  @apply btn bg-signal text-white hover:bg-ink;
 }
-
 @utility btn-dark {
-  @apply btn bg-navy-900 text-white hover:bg-navy-800;
+  @apply btn bg-ink text-white hover:bg-navy-800;
 }
-
 @utility btn-outline {
   @apply btn border border-current hover:bg-black/5;
 }
-
 @utility btn-danger {
   @apply btn bg-red-700 text-white hover:bg-red-800;
 }
-
 @utility field-label {
-  @apply mb-1 block text-sm font-medium text-navy-900;
+  @apply mb-1 block text-sm font-medium text-ink;
 }
-
 @utility field-input {
-  @apply block w-full border border-cream-300 bg-white px-3 py-2.5 text-[15px] focus:border-navy-700 focus:outline-none;
+  @apply block w-full rounded-xl border border-stone-deep bg-white px-3 py-2.5 text-[15px] focus:border-ink focus:outline-none;
 }
-
 @utility field-error {
   @apply mt-1 text-sm text-red-700;
 }
 
+/* Signal arrow ↗ nudges 2px up-right on hover (DESIGN.md §5.4) */
+@utility arrow-nudge {
+  display: inline-block;
+  transition: transform 0.3s var(--ease-signal);
+}
+
 @layer components {
-  /* Article typography (rendered BlockNote content) */
+  .group:hover .arrow-nudge,
+  .group:focus-visible .arrow-nudge,
+  a:hover > .arrow-nudge,
+  a:focus-visible > .arrow-nudge {
+    transform: translate(2px, -2px);
+  }
+
+  /* Article typography (rendered BlockNote content) — Artikel.dc.html */
   .prose-article {
-    @apply text-[18px] leading-[1.8] text-navy-900;
+    font-family: var(--font-serif);
+    font-size: 21px;
+    line-height: 1.7;
+    color: #1e1d1b;
   }
-  .prose-article > * + * {
-    @apply mt-5;
+  @media (max-width: 760px) {
+    .prose-article { font-size: 19px; }
   }
-  .prose-article h2 {
-    @apply mt-10 font-display text-3xl font-semibold leading-tight;
+  .prose-article > * + * { margin-top: 1.1em; }
+  .prose-article > p:first-child {
+    font-size: 1.14em;
+    line-height: 1.6;
   }
-  .prose-article h3 {
-    @apply mt-8 font-display text-2xl font-semibold;
+  .prose-article > p:first-child::first-letter {
+    float: left;
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 118;
+    font-weight: 700;
+    font-size: 5.2em;
+    line-height: 0.8;
+    padding: 0.06em 0.12em 0 0;
+    color: var(--color-signal-ink);
   }
+  .prose-article h2,
+  .prose-article h3,
   .prose-article h4 {
-    @apply mt-6 text-xl font-semibold;
+    @apply font-display-m font-bold uppercase text-ink;
+    margin: 1.6em 0 0.6em;
+    line-height: 1;
+    letter-spacing: -0.01em;
   }
+  .prose-article h2 { font-size: 36px; }
+  .prose-article h3 { font-size: 28px; }
+  .prose-article h4 { font-size: 22px; }
   .prose-article a {
-    @apply text-navy-700 underline underline-offset-2 hover:text-navy-900;
+    text-decoration: underline;
+    text-decoration-color: var(--color-signal);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 2px;
   }
+  .prose-article a:hover { color: var(--color-signal-ink); }
   .prose-article blockquote {
-    @apply border-l-4 border-gold-500 pl-5 font-display text-2xl italic text-navy-800;
+    @apply font-display-m font-bold uppercase text-ink;
+    margin: 1.6em 0;
+    padding: 28px 0 28px 32px;
+    border-left: 4px solid var(--color-signal);
+    font-size: clamp(24px, 2.6vw, 34px);
+    line-height: 1.02;
+    letter-spacing: -0.01em;
   }
-  .prose-article ul {
-    @apply list-disc pl-6;
+  .prose-article ul { list-style: disc; padding-left: 1.2em; }
+  .prose-article ol { list-style: decimal; padding-left: 1.2em; }
+  .prose-article li + li { margin-top: 0.4em; }
+  .prose-article li::marker { color: var(--color-signal); }
+  .prose-article figure img { border-radius: 16px; }
+  .prose-article figcaption {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--color-ink-soft);
   }
-  .prose-article ol {
-    @apply list-decimal pl-6;
+  .prose-article hr { border-color: var(--color-stone-deep); }
+  .prose-article code { background: var(--color-stone); padding: 0 0.25em; border-radius: 4px; font-size: 0.9em; }
+  .prose-article .cols2 {
+    border-top: 1px solid var(--color-stone-deep);
+    border-bottom: 1px solid var(--color-stone-deep);
+    padding: 24px 0;
+    font-size: 18px;
+    line-height: 1.6;
   }
-  .prose-article code {
-    @apply bg-cream-100 px-1 text-[0.9em];
+
+  /* Reveal helpers: content is visible without JS; the GSAP/motion code
+     only hides it right before animating (see composables/useReveal.ts). */
+  .split-word { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+  .split-word > span { display: inline-block; will-change: transform; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
+}
+
+/* ------------------------------------------------------------------------
+   Reveal contract (plugins/motion.client.ts). `html.js` is set by an inline
+   head script only when motion is allowed, so without JS — or with reduced
+   motion — nothing is ever hidden. If the motion plugin never boots, the
+   fallback animation shows everything after 2.5s.
+   ------------------------------------------------------------------------ */
+html.js [data-reveal] { opacity: 0; }
+html.js [data-split] .split-word > span { transform: translateY(110%); }
+html.js [data-intro] { opacity: 0; }
+html.js [data-mast] .ch { transform: translateY(105%); }
+html.js:not(.motion-ready) [data-reveal],
+html.js:not(.motion-ready) [data-intro] { animation: reveal-fallback 0.6s 2.5s forwards; }
+html.js:not(.motion-ready) [data-mast] .ch,
+html.js:not(.motion-ready) [data-split] .split-word > span { animation: reveal-fallback-y 0.6s 2.5s forwards; }
+@keyframes reveal-fallback { to { opacity: 1; } }
+@keyframes reveal-fallback-y { to { transform: none; } }
+
+@utility page-root {
+  @apply flex w-full flex-col items-center gap-4;
 }

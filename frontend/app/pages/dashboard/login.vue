@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: false, middleware: 'auth' })
+definePageMeta({ layout: false, middleware: 'auth', i18n: false })
 useHead({ title: 'Masuk — Dashboard', meta: [{ name: 'robots', content: 'noindex, nofollow' }] })
 
 const { login } = useAuth()

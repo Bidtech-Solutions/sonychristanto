@@ -1,35 +1,59 @@
 <script setup lang="ts">
-import { isOngoing, organizations, periodLabel } from '~/data/organizations'
+// /organisasi (Organisasi.dc.html): hero with floating logo orbs + stats,
+// Gantt "Linimasa Kiprah", detail panel.
+import { organizations, orgStatus } from '~/data/organizations'
 
-usePageSeo({
-  title: 'Organisasi',
-  description: 'Organisasi dan lembaga tempat Sony Christanto berkiprah, beserta peran dan periodenya.',
-  path: '/organisasi',
+const { t, lp } = useL()
+usePageSeo({ title: t('org.title'), description: t('org.description'), path: '/organisasi' })
+const { siteUrl } = useRuntimeConfig().public
+useJsonLd({
+  '@type': 'ItemList',
+  name: t('org.title'),
+  itemListElement: organizations.map((o, i) => ({ '@type': 'ListItem', position: i + 1, name: o.name, url: siteUrl + lp(`/organisasi/${o.slug}`) })),
 })
-
-const sections = [
-  { title: 'Organisasi — periode berjalan', items: organizations.filter((o) => o.kind === 'organisasi' && isOngoing(o)) },
-  { title: 'Organisasi — periode sebelumnya', items: organizations.filter((o) => o.kind === 'organisasi' && !isOngoing(o)) },
-  { title: 'Kepartaian', items: organizations.filter((o) => o.kind === 'partai') },
-].filter((s) => s.items.length)
+const count = (s: string) => organizations.filter((o) => orgStatus(o) === s).length
+const orbs = organizations.filter((o) => orgStatus(o) === 'berjalan')
+const orbPos = [
+  'left-[36%] top-[30%] size-[190px]',
+  'left-[6%] top-[8%] size-[130px]',
+  'right-[4%] top-[4%] size-[140px]',
+  'left-[4%] bottom-[10%] size-[120px]',
+  'right-[8%] bottom-[6%] size-[136px]',
+  'left-[40%] bottom-0 size-[92px]',
+]
 </script>
 
 <template>
-  <div>
-    <PageHero eyebrow="Kiprah" title="Organisasi" lead="Peran Sony Christanto di organisasi pendidikan, olahraga, dunia usaha, keagamaan, dan kepartaian." :crumbs="[{ name: 'Organisasi', path: '/organisasi' }]" />
-    <div class="container-page space-y-16 py-16">
-      <section v-for="s in sections" :key="s.title">
-        <h2 class="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-ink-600">{{ s.title }}</h2>
-        <ul class="border-t-2 border-navy-900">
-          <li v-for="o in s.items" :key="o.slug" class="border-b border-cream-300">
-            <NuxtLink :to="`/organisasi/${o.slug}`" class="grid gap-1 py-5 hover:bg-cream-100 sm:grid-cols-[140px_1fr_240px] sm:items-baseline sm:px-2">
-              <span class="font-semibold text-gold-700">{{ periodLabel(o) }}</span>
-              <span class="font-display text-xl font-semibold">{{ o.name }}</span>
-              <span class="text-ink-600">{{ o.role }}</span>
-            </NuxtLink>
-          </li>
-        </ul>
-      </section>
-    </div>
+  <div class="page-root">
+    <section class="panel grid gap-6 bg-stone px-5 py-10 md:grid-cols-2 md:px-12 md:py-14">
+      <div class="flex flex-col justify-between gap-10">
+        <Breadcrumbs :items="[{ name: t('org.title'), path: '/organisasi' }]" />
+        <RevealText as="h1" trigger="load" class="font-display-x m-0 text-[15vw] font-bold leading-[0.86] tracking-[-0.035em] md:text-[clamp(64px,8vw,124px)]" :lines="[{ text: t('org.heroLine1'), class: 'text-ink-ghost' }, { text: t('org.heroLine2'), indent: '10%' }]" />
+        <p data-reveal class="m-0 max-w-[520px] text-[18px] leading-relaxed text-ink-soft md:text-[19px]">{{ t('org.lead') }}</p>
+        <dl class="grid grid-cols-3 border-t border-ink pt-5" data-reveal>
+          <div class="flex flex-col-reverse gap-2"><dt class="label-sm text-ink-soft">{{ t('org.statOngoing') }}</dt><dd class="font-display-x m-0 text-[44px] font-semibold leading-[0.9] text-signal md:text-[56px]"><CountUp :value="count('berjalan')" /></dd></div>
+          <div class="flex flex-col-reverse gap-2 border-l border-stone-deep pl-5"><dt class="label-sm text-ink-soft">{{ t('org.statPast') }}</dt><dd class="font-display-x m-0 text-[44px] font-semibold leading-[0.9] md:text-[56px]"><CountUp :value="count('sebelumnya')" /></dd></div>
+          <div class="flex flex-col-reverse gap-2 border-l border-stone-deep pl-5"><dt class="label-sm text-ink-soft">{{ t('org.statParty') }}</dt><dd class="font-display-x m-0 text-[44px] font-semibold leading-[0.9] md:text-[56px]"><CountUp :value="count('partai')" /></dd></div>
+        </dl>
+      </div>
+      <div aria-hidden="true" class="relative h-[300px] max-md:origin-top max-md:scale-[0.62] md:h-[560px]">
+        <LightGrid class="absolute left-[14%] top-[10%] h-[70%] w-[72%]" :blur="20" :opacity="0.35" interactive />
+        <NuxtLink
+          v-for="(o, k) in orbs"
+          :key="o.slug"
+          :to="lp(`/organisasi/${o.slug}`)"
+          tabindex="-1"
+          data-reveal="scale"
+          :data-reveal-delay="0.3 + k * 0.08"
+          class="absolute flex animate-floaty items-center justify-center rounded-full bg-white shadow-[0_18px_40px_rgba(0,0,0,0.08)] transition-transform duration-500 hover:scale-110"
+          :class="orbPos[k % orbPos.length]"
+          :style="{ animationDelay: `${-k * 2}s` }"
+        >
+          <img :src="o.logo" alt="" class="size-[72%] object-contain" />
+        </NuxtLink>
+      </div>
+    </section>
+
+    <OrgTimeline />
   </div>
 </template>

@@ -35,7 +35,7 @@ useHead({ titleTemplate: (t?: string) => (t ? `${t} — Dashboard` : 'Dashboard'
             </div>
           </div>
           <div class="mt-3 flex gap-3">
-            <NuxtLink to="/" target="_blank" class="text-navy-200 underline hover:text-white">Lihat situs</NuxtLink>
+            <NuxtLink to="/id" target="_blank" class="text-navy-200 underline hover:text-white">Lihat situs</NuxtLink>
             <button type="button" class="text-navy-200 underline hover:text-white" @click="logout">Keluar</button>
           </div>
         </div>

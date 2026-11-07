@@ -101,7 +101,7 @@ jobs:
           build-args: |
             NUXT_PUBLIC_SITE_URL=${{ secrets.SITE_URL || 'https://sonychristanto.com' }}
             NUXT_PUBLIC_GTM_ID=${{ secrets.NUXT_PUBLIC_GTM_ID || 'GTM-5FC5K5DH' }}
-            NUXT_PUBLIC_SECURITY_CONTACT=${{ secrets.SECURITY_CONTACT || 'mailto:security@sonychristanto.com' }}
+            NUXT_PUBLIC_SECURITY_CONTACT=${{ secrets.SECURITY_CONTACT || 'mailto:cs@bidtech.co.id' }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
           labels: |

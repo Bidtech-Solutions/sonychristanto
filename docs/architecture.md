@@ -6,8 +6,8 @@
 flowchart LR
     U[Pengunjung / Admin] --> CF[Cloudflare<br/>DNS + cache + TLS]
     CF --> NX[nginx di host VPS<br/>reverse proxy]
-    NX -->|"/ , /dashboard"| FE[frontend<br/>Nuxt 4 / Nitro<br/>127.0.0.1:3060]
-    NX -->|"/api/ , /media/ (opsional langsung)"| BE[backend<br/>Go + Gin<br/>127.0.0.1:8060]
+    NX -->|"/ , /dashboard"| FE[frontend<br/>Nuxt 4 / Nitro<br/>127.0.0.1:3070]
+    NX -->|"/api/ , /media/ (opsional langsung)"| BE[backend<br/>Go + Gin<br/>127.0.0.1:8070]
     FE -->|"SSR fetch + proxy /api, /media"| BE
     BE --> PG[(PostgreSQL 17<br/>volume sonychristanto_pg_data)]
     BE -->|S3 API| RF[(RustFS 1.0.4<br/>container proyek ini<br/>volume sonychristanto_rustfs_data)]
@@ -15,15 +15,15 @@ flowchart LR
     BE -.->|"purge (opsional)"| CF
 ```
 
-| Komponen       | Teknologi                                                                          | Catatan                                                                   |
-| -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Frontend       | Nuxt 4 (Vue 3, Nitro node-server), Tailwind CSS v4, @nuxt/fonts                    | Website publik + dashboard SPA dalam satu app                             |
-| Editor         | BlockNote 0.57 (React) dipasang di komponen Vue client-only                        | `frontend/app/editor/blocknote.ts`                                      |
-| Backend        | Go 1.26, Gin, GORM, golang-jwt v5, bcrypt, minio-go (S3), imaging + gen2brain/webp | Binary statis di image distroless (~13 MB)                                |
-| Database       | PostgreSQL 17                                                                      | Container khusus project ini                                              |
-| Object storage | RustFS 1.0.4 (S3-compatible)                                                       | Container milik proyek ini (dev & prod), bucket privat `sonychristanto` |
-| CI/CD          | GitHub Actions → GHCR → SSH ke VPS                                               | `.github/workflows/sonychristanto.yml`                                  |
-| Edge           | Cloudflare (DNS, proxy, cache) + nginx host                                        | Konfigurasi di luar repo (bundle ops)                                     |
+| Komponen | Teknologi | Catatan |
+|---|---|---|
+| Frontend | Nuxt 4 (Vue 3, Nitro node-server), Tailwind CSS v4, @nuxt/fonts | Website publik + dashboard SPA dalam satu app |
+| Editor | BlockNote 0.57 (React) dipasang di komponen Vue client-only | `frontend/app/editor/blocknote.ts` |
+| Backend | Go 1.26, Gin, GORM, golang-jwt v5, bcrypt, minio-go (S3), imaging + gen2brain/webp | Binary statis di image distroless (~13 MB) |
+| Database | PostgreSQL 17 | Container khusus project ini |
+| Object storage | RustFS 1.0.4 (S3-compatible) | Container milik proyek ini (dev & prod), bucket privat `sonychristanto` |
+| CI/CD | GitHub Actions → GHCR → SSH ke VPS | `.github/workflows/sonychristanto.yml` |
+| Edge | Cloudflare (DNS, proxy, cache) + nginx host | Konfigurasi di luar repo (bundle ops) |
 
 ## 2. Struktur repo
 
@@ -71,15 +71,17 @@ flowchart LR
 
 ## 3. Rendering & cache
 
-| Route                                                                                                                                                                                                   | Mode                                                 | Cache                                                              |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------ |
-| `/biografi`, `/organisasi`, `/organisasi/*`, `/penghargaan`, `/penghargaan/*`, `/karya-tulis`, `/karya-tulis/*`, `/galeri`, `/kontak`, `/robots.txt`, `/.well-known/security.txt` | **SSG**: prerender saat `nuxt build` (di CI) | File statis                                                        |
-| `/`, `/blog`, `/blog/kategori/*`, `/blog/*`, `/sitemap.xml`, `/feed.xml`, `/llms.txt`, `/llms-full.txt`                                                                                 | **ISR**: SSR + `swr: 600`                    | Cache Nitro 10 menit, `s-maxage=600, stale-while-revalidate`     |
-| `/dashboard/**`                                                                                                                                                                                       | SPA (`ssr: false`)                                 | `no-store`, `X-Robots-Tag: noindex`                            |
-| `/_nuxt/**`                                                                                                                                                                                           | aset ber-hash                                        | `max-age=31536000, immutable`                                    |
-| `/media/**`                                                                                                                                                                                           | stream dari bucket via backend                       | `max-age=31536000, immutable` (key = UUID, tidak pernah ditimpa) |
+| Route | Mode | Cache |
+|---|---|---|
+| `/{id,en}/biografi`, `/{id,en}/organisasi`, `/{id,en}/organisasi/*`, `/{id,en}/penghargaan(/*)`, `/{id,en}/karya-tulis(/*)`, `/{id,en}/galeri`, `/{id,en}/kontak`, `/robots.txt`, `/.well-known/security.txt` | **SSG**: prerender saat `nuxt build` (di CI) | File statis |
+| `/id`, `/en`, `/{id,en}/blog`, `/{id,en}/blog/kategori/*`, `/{id,en}/blog/*`, `/feed.xml`, `/llms.txt`, `/llms-full.txt` | **ISR**: SSR + `swr: 600` | Cache Nitro 10 menit, `s-maxage=600, stale-while-revalidate` |
+| `/sitemap_index.xml`, `/__sitemap__/{id-ID,en-US}.xml` | `@nuxtjs/sitemap` (dinamis) | cache modul 10 menit, ikut dibersihkan revalidate |
+| `/`, `/biografi`, `/blog/...` (tanpa prefix) | 301 → `/id/...` (`server/middleware/locale-redirect.ts`) | — |
+| `/dashboard/**` | SPA (`ssr: false`) | `no-store`, `X-Robots-Tag: noindex` |
+| `/_nuxt/**` | aset ber-hash | `max-age=31536000, immutable` |
+| `/media/**` | stream dari bucket via backend | `max-age=31536000, immutable` (key = UUID, tidak pernah ditimpa) |
 
-Daftar route SSG ada di **satu tempat**: `frontend/app/data/routes.ts`. Dipakai `nuxt.config.ts` (prerender), sitemap, dan llms.txt. Menambah organisasi/penghargaan/karya tulis cukup mengedit file data, karena halaman detail ikut terbuat saat build berikutnya.
+Daftar route SSG ada di **satu tempat**: `frontend/app/data/routes.ts` (tanpa prefix; `nuxt.config.ts` mengalikan dengan locale `id`, `en`). Dipakai `nuxt.config.ts` (prerender), sitemap, dan llms.txt. Menambah organisasi/penghargaan/karya tulis cukup mengedit file data, karena halaman detail ikut terbuat saat build berikutnya.
 
 **Kenapa `/` ISR, bukan SSG:** beranda menampilkan artikel terbaru, sedangkan API tidak tersedia saat build di CI.
 
@@ -179,23 +181,23 @@ WebP encoder memakai `gen2brain/webp` (libwebp via WASM). **Selalu build dengan 
 
 ### Development (`docker compose up -d --build`)
 
-| Service  | Port lokal                | Keterangan                          |
-| -------- | ------------------------- | ----------------------------------- |
-| frontend | 3000 (+24678 HMR)         | `nuxt dev`, source di-mount       |
-| backend  | 8080                      | `air` hot reload, source di-mount |
-| postgres | 5432                      | volume `pg_data`                  |
-| rustfs   | 9000 (S3), 9001 (console) | lokal, kredensial dari `.env`     |
+| Service | Port lokal | Keterangan |
+|---|---|---|
+| frontend | 3000 (+24678 HMR) | `nuxt dev`, source di-mount |
+| backend | 8080 | `air` hot reload, source di-mount |
+| postgres | 5432 | volume `pg_data` |
+| rustfs | 9000 (S3), 9001 (console) | lokal, kredensial dari `.env` |
 
 ### Production (VPS `srv1828434`)
 
-| Service  | Bind host                                                           | Memori |
-| -------- | ------------------------------------------------------------------- | ------ |
-| frontend | `127.0.0.1:3060`                                                  | 512 MB |
-| backend  | `127.0.0.1:8060`                                                  | 256 MB |
-| postgres | tidak diekspos                                                      | 384 MB |
-| rustfs   | port S3 tidak diekspos; console `127.0.0.1:9011` (via SSH tunnel) | 256 MB |
+| Service | Bind host | Memori |
+|---|---|---|
+| frontend | `127.0.0.1:3070` | 512 MB |
+| backend | `127.0.0.1:8070` | 256 MB |
+| postgres | tidak diekspos | 384 MB |
+| rustfs | port S3 tidak diekspos; console `127.0.0.1:9011` (via SSH tunnel) | 256 MB |
 
-Port 3060/8060/9011 dipilih supaya tidak bentrok dengan project lain di VPS (3000, 3010, 3020, 3040, 8000, 8080, 5433, 9000, 9001). Nama compose project dikunci `sonychristanto` agar nama volume tetap (`sonychristanto_pg_data`, `sonychristanto_rustfs_data`). RustFS proyek ini **terpisah** dari RustFS lain yang mungkin ada di VPS (`/opt/rustfs`); hanya backend yang mengaksesnya lewat network compose internal (`rustfs:9000`). Kredensial root RustFS = `S3_ACCESS_KEY`/`S3_SECRET_KEY`.
+Port 3070/8070/9011 dipilih supaya tidak bentrok dengan project lain di VPS (3000, 3010, 3020, 3040, 8000, 8080, 5433, 9000, 9001). Nama compose project dikunci `sonychristanto` agar nama volume tetap (`sonychristanto_pg_data`, `sonychristanto_rustfs_data`). RustFS proyek ini **terpisah** dari RustFS lain yang mungkin ada di VPS (`/opt/rustfs`); hanya backend yang mengaksesnya lewat network compose internal (`rustfs:9000`). Kredensial root RustFS = `S3_ACCESS_KEY`/`S3_SECRET_KEY`.
 
 ## 8. CI/CD
 

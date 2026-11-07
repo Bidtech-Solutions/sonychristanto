@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AdminArticle, Envelope, PageMeta } from '~/types/api'
 
-definePageMeta({ layout: 'dashboard', middleware: 'auth' })
+definePageMeta({ layout: 'dashboard', middleware: 'auth', i18n: false })
 useHead({ title: 'Ringkasan' })
 
 const api = useAdminApi()
