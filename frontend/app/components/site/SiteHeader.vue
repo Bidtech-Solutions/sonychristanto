@@ -4,7 +4,7 @@
 //   variant="pill"  stone pill at the top of inner pages
 // Both get: a slim sticky paper bar that slides in after scrolling, and a
 // full-screen mobile sheet with huge uppercase links.
-import { navigation, navigationFull, site } from '~/data/site'
+import { navigation, site } from '~/data/site'
 
 const props = withDefaults(defineProps<{ variant?: 'hero' | 'pill' }>(), { variant: 'pill' })
 const { t, lp } = useL()
@@ -85,6 +85,11 @@ const ease = [0.2, 0.7, 0.2, 1] as const
       </div>
     </nav>
 
+    <!-- Fixed layers are teleported to <body>: in the hero this component sits inside a
+         GSAP-transformed wrapper inside an overflow-hidden panel, which would otherwise
+         become the containing block of `position: fixed` and clip the sheet. -->
+    <ClientOnly>
+    <Teleport to="body">
     <!-- Slim sticky bar -->
     <AnimatePresence>
       <Motion
@@ -137,7 +142,7 @@ const ease = [0.2, 0.7, 0.2, 1] as const
           <button type="button" class="inline-flex h-11 items-center rounded-full bg-ink px-[18px] text-[12px] font-semibold uppercase tracking-[0.1em] text-paper" @click="open = false">{{ t('nav.close') }} ✕</button>
         </div>
         <ul class="mt-10 flex flex-1 flex-col justify-center gap-1">
-          <li v-for="(item, i) in navigationFull" :key="item.key" class="overflow-hidden">
+          <li v-for="(item, i) in navigation" :key="item.key" class="overflow-hidden">
             <Motion
               as="div"
               :initial="{ y: '110%' }"
@@ -164,5 +169,7 @@ const ease = [0.2, 0.7, 0.2, 1] as const
         </div>
       </Motion>
     </AnimatePresence>
+    </Teleport>
+    </ClientOnly>
   </div>
 </template>

@@ -74,7 +74,7 @@ export const navigation = [
   { key: 'contact', to: '/kontak' },
 ] as const
 
-/** Navigasi lengkap (footer & menu ponsel). */
+/** Navigasi lengkap — hanya footer. Penghargaan, Karya Tulis, dan Galeri disembunyikan dari menu header/ponsel (permintaan PM); halamannya tetap ada. */
 export const navigationFull = [
   ...navigation.slice(0, 4),
   { key: 'awards', to: '/penghargaan' },
