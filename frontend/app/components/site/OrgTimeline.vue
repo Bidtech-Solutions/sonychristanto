@@ -60,7 +60,7 @@ useGsap(gantt, (gsap) => {
         </div>
       </div>
 
-      <div class="overflow-x-auto pb-2" data-lenis-prevent>
+      <div class="overflow-x-auto overflow-y-hidden pb-2">
         <div ref="gantt" class="min-w-[980px]">
           <div class="grid grid-cols-[340px_minmax(0,1fr)] items-end border-b border-ink pb-2.5">
             <span class="label-sm text-ink-soft">{{ t('org.colOrg') }}</span>

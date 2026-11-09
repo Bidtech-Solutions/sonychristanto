@@ -22,7 +22,21 @@ const pageTransition = {
     // out-in: the new page is only in the DOM now, so (re)arm scroll reveals here.
     ;($refreshReveals as (() => void) | undefined)?.()
     if ($motionReduced || !$gsap) return done()
-    ;($gsap as typeof import('gsap').default).fromTo(el, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', clearProps: 'opacity,transform', onComplete: done })
+    ;($gsap as typeof import('gsap').default).fromTo(
+      el,
+      { opacity: 0, y: 26 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.6,
+        ease: 'power3.out',
+        clearProps: 'opacity,transform',
+        onComplete: () => {
+          useLenis()?.resize()
+          done()
+        },
+      },
+    )
   },
 }
 

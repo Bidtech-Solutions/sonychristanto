@@ -79,7 +79,7 @@ const scrollCards = (dir: number) => scroller.value?.scrollBy({ left: dir * 316,
         </div>
       </SectionHead>
       
-      <div ref="scroller" class="-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]" data-lenis-prevent>
+      <div ref="scroller" class="-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden px-1 py-2 [scrollbar-width:thin]">
         <NuxtLink
           v-for="(c, k) in profileCards"
           :key="c.no"
