@@ -143,6 +143,7 @@
     "categories": "Kategori artikel",
     "emptyTitle": "Belum ada artikel",
     "emptyText": "Artikel baru akan tampil di sini setelah diterbitkan.",
+    "emptyCategory": "Artikel {category} segera ditambahkan.",
     "aspiration": "Punya aspirasi atau undangan kegiatan?",
     "contactOffice": "Hubungi kantor",
     "toc": "Daftar isi",

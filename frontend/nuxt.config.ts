@@ -13,7 +13,10 @@ import { personIdentity } from './app/utils/schema'
 //   /en/...  English
 //   /        301 -> /id
 const LOCALES = ['id', 'en'] as const
-const isr = { swr: 600 } // seconds; publish/unpublish purges immediately
+// seconds; publish/unpublish purges immediately. Off in `nuxt dev`: the dev cache
+// lives in the persistent .nuxt volume, so cached HTML from an older template
+// would be hydrated by newer client code (hydration mismatch, garbled layout).
+const isr = process.env.NODE_ENV === 'production' ? { swr: 600 } : {}
 
 const noindex = {
   ssr: false,
@@ -22,6 +25,10 @@ const noindex = {
 
 const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
 
+// Dev in Docker on a Windows/macOS bind mount gets no file-change events, so
+// HMR silently keeps serving old code. docker-compose.yml sets this to poll.
+const devPolling = process.env.NUXT_DEV_POLLING === '1'
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-11-01',
   devtools: { enabled: false },
@@ -29,8 +36,15 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/i18n', '@nuxtjs/seo', '@nuxtjs/sitemap', 'motion-v/nuxt'],
   components: [{ path: '~/components', pathPrefix: false }],
   css: ['~/assets/css/main.css'],
+  watchers: devPolling ? { chokidar: { usePolling: true, interval: 300 } } : {},
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      // Dev only: the backend container purges ISR at http://frontend:3000/_internal/revalidate;
+      // Vite's host check would answer 403 to that Host header (production runs Nitro, no Vite).
+      allowedHosts: ['frontend'],
+      ...(devPolling ? { watch: { usePolling: true, interval: 300 } } : {}),
+    },
     build: {
       chunkSizeWarningLimit: 1600, // the BlockNote editor chunk (dashboard only) is ~1.2 MB
       rollupOptions: {

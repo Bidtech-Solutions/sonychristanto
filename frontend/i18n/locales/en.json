@@ -143,6 +143,7 @@
     "categories": "Article categories",
     "emptyTitle": "No articles yet",
     "emptyText": "New articles will appear here once published.",
+    "emptyCategory": "{category} articles are coming soon.",
     "aspiration": "Have a proposal or an event invitation?",
     "contactOffice": "Contact the office",
     "toc": "Contents",

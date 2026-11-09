@@ -1,8 +1,12 @@
 <script setup lang="ts">
 // Article editor. Every change autosaves the DRAFT (debounced). The public
 // page only changes when "Terbitkan" is pressed. See docs/PRD.md §Modul 3.
+import { ArrowLeft, ExternalLink, PowerOff, Send, Trash2, Undo2 } from 'lucide-vue-next'
 import { categories } from '~/data/site'
 import type { AdminArticle, Block, Envelope } from '~/types/api'
+
+// Toolbar pill button (colour classes are added per button).
+const tbBtn = 'label-sm inline-flex h-10 items-center gap-1.5 rounded-full border-[1.5px] px-4 transition-colors disabled:cursor-not-allowed disabled:opacity-50'
 
 definePageMeta({ layout: 'dashboard', middleware: 'auth', i18n: false })
 
@@ -197,40 +201,41 @@ const isPublished = computed(() => article.value?.status === 'published')
 </script>
 
 <template>
-  <div class="max-w-5xl">
-    <p v-if="loadError" role="alert" class="bg-red-50 p-4 text-red-800">{{ loadError }}</p>
+  <div>
+    <p v-if="loadError" role="alert" class="m-0 rounded-xl bg-signal-tint px-4 py-3 font-medium text-signal-ink">{{ loadError }}</p>
 
     <template v-else-if="article">
-      <div class="sticky top-0 z-10 -mx-5 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-cream-300 bg-cream-100/95 px-5 py-3 backdrop-blur md:-mx-10 md:px-10">
-        <div class="flex items-center gap-3">
-          <NuxtLink to="/dashboard/artikel" class="text-sm underline">← Artikel</NuxtLink>
+      <div class="sticky top-0 z-10 -mx-5 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-stone-deep bg-paper/95 px-5 py-3 backdrop-blur md:-mx-10 md:px-10">
+        <div class="flex flex-wrap items-center gap-3">
+          <NuxtLink to="/dashboard/artikel" :class="[tbBtn, 'border-stone-deep hover:border-ink hover:bg-ink hover:text-paper']"><ArrowLeft class="size-3.5" aria-hidden="true" />Artikel</NuxtLink>
           <ArticleStatusBadge :article="article" />
-          <span class="text-sm text-ink-600" aria-live="polite">{{ saveLabel }}</span>
+          <span class="text-[13px] text-ink-soft" aria-live="polite">{{ saveLabel }}</span>
         </div>
         <div class="flex flex-wrap gap-2">
-          <a v-if="isPublished" :href="`/id/blog/${article.slug}`" target="_blank" class="btn-outline">Lihat</a>
-          <button v-if="article.has_unpublished_changes" type="button" class="btn-outline" :disabled="busy" @click="discard">Buang perubahan</button>
-          <button v-if="isPublished" type="button" class="btn-outline" :disabled="busy" @click="unpublish">Nonaktifkan</button>
-          <button type="button" class="btn-primary" :disabled="busy || saveState === 'conflict'" @click="publish">
-            {{ article.status === 'draft' ? 'Terbitkan' : isPublished ? 'Terbitkan perubahan' : 'Terbitkan ulang' }}
+          <a v-if="isPublished" :href="`/id/blog/${article.slug}`" target="_blank" :class="[tbBtn, 'border-stone-deep hover:border-ink hover:bg-ink hover:text-paper']"><ExternalLink class="size-3.5" aria-hidden="true" />Lihat</a>
+          <button v-if="article.has_unpublished_changes" type="button" :class="[tbBtn, 'border-stone-deep hover:border-ink hover:bg-ink hover:text-paper']" :disabled="busy" @click="discard"><Undo2 class="size-3.5" aria-hidden="true" />Buang perubahan</button>
+          <button v-if="isPublished" type="button" :class="[tbBtn, 'border-stone-deep hover:border-ink hover:bg-ink hover:text-paper']" :disabled="busy" @click="unpublish"><PowerOff class="size-3.5" aria-hidden="true" />Nonaktifkan</button>
+          <button type="button" :class="[tbBtn, 'border-signal bg-signal text-white hover:border-ink hover:bg-ink']" :disabled="busy || saveState === 'conflict'" @click="publish">
+            <Send class="size-3.5" aria-hidden="true" />{{ article.status === 'draft' ? 'Terbitkan' : isPublished ? 'Terbitkan perubahan' : 'Terbitkan ulang' }}
           </button>
         </div>
       </div>
 
-      <div v-if="saveState === 'conflict'" role="alert" class="mb-6 bg-red-50 p-4 text-red-800">
+      <div v-if="saveState === 'conflict'" role="alert" class="mb-6 rounded-xl bg-signal-tint px-4 py-3 font-medium text-signal-ink">
         Draft ini sudah diubah di tempat lain. Perubahan terakhir Anda belum tersimpan.
         <button type="button" class="ml-2 font-semibold underline" @click="() => { article = undefined; load() }">Muat versi terbaru</button>
       </div>
-      <p v-if="actionMessage" role="status" class="mb-6 bg-white p-4">{{ actionMessage }}</p>
+      <p v-if="actionMessage" role="status" class="mb-6 rounded-xl bg-stone px-4 py-3 font-medium">{{ actionMessage }}</p>
 
       <div class="space-y-6">
+        <span class="eyebrow">Editor artikel</span>
         <div>
           <label for="title" class="sr-only">Judul</label>
           <input id="title" v-model="form.title" type="text" maxlength="200" placeholder="Judul artikel" class="w-full bg-transparent font-display text-4xl font-semibold placeholder:text-navy-200 focus:outline-none" />
           <p v-if="fieldErrors.title" class="field-error">{{ fieldErrors.title }}</p>
         </div>
 
-        <div class="grid gap-6 bg-white p-6 md:grid-cols-2">
+        <div class="grid gap-6 rounded-[20px] bg-white p-6 md:grid-cols-2 md:p-8">
           <div>
             <label for="category" class="field-label">Kategori</label>
             <select id="category" v-model="form.category" class="field-input">
@@ -267,12 +272,12 @@ const isPublished = computed(() => article.value?.status === 'published')
           <p v-if="fieldErrors.content" class="field-error">{{ fieldErrors.content }}</p>
         </div>
 
-        <div class="border-t border-cream-300 pt-6">
-          <button type="button" class="text-red-700 underline" :disabled="busy" @click="remove">Hapus artikel permanen</button>
+        <div class="flex justify-end border-t border-stone-deep pt-6">
+          <button type="button" :class="[tbBtn, 'border-signal-tint bg-signal-tint text-signal-ink hover:border-signal hover:bg-signal hover:text-white']" :disabled="busy" @click="remove"><Trash2 class="size-3.5" aria-hidden="true" />Hapus artikel permanen</button>
         </div>
       </div>
     </template>
 
-    <p v-else class="text-ink-600">Memuat…</p>
+    <p v-else class="text-ink-soft">Memuat…</p>
   </div>
 </template>

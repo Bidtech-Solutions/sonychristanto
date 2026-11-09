@@ -41,5 +41,23 @@ export function useGsap(scope: Ref<HTMLElement | null | undefined>, setup: (gsap
   })
 }
 
+type ScrollLock = { lock: (id: string) => void; unlock: (id: string) => void; releaseAll: () => void }
+
+/**
+ * Lock page scroll while `active` is true (menu sheet, lightbox...). Goes
+ * through the shared lock in plugins/motion.client.ts and always releases on
+ * unmount, so a component that disappears while locked can't freeze the page.
+ */
+let lockSeq = 0
+export function useScrollLock(active: Ref<boolean>) {
+  if (!import.meta.client) return
+  // Plain counter, not useId(): calling useId only on the client would shift
+  // the SSR ids of sibling components and break hydration.
+  const id = `lock-${++lockSeq}`
+  const lock = useNuxtApp().$scrollLock as ScrollLock
+  watch(active, (v) => (v ? lock.lock(id) : lock.unlock(id)), { immediate: true })
+  onBeforeUnmount(() => lock.unlock(id))
+}
+
 /** Lenis instance (null when reduced motion / dashboard / SSR). */
 export const useLenis = () => (import.meta.client ? (useNuxtApp().$lenis as () => import('lenis').default | null)() : null)

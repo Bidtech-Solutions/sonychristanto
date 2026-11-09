@@ -5,7 +5,7 @@ defineProps<{ eyebrow?: string; title: string; link?: { to: string; label: strin
 
 <template>
   <div class="flex flex-wrap items-end justify-between gap-5">
-    <div class="flex flex-col gap-3.5">
+    <div class="flex min-w-0 flex-col gap-3.5">
       <span v-if="eyebrow" data-reveal class="label text-ink-soft"><span class="mr-2.5 inline-block size-2 bg-signal" />{{ eyebrow }}</span>
       <component :is="as ?? 'h2'" data-reveal class="h2-display" v-html="title" />
     </div>

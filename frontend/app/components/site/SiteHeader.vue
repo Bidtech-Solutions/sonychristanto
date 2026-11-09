@@ -17,13 +17,12 @@ const isActive = (to: string) => {
   return to === '/' ? route.path === target : route.path.startsWith(target)
 }
 
+// Shared lock (plugins/motion.client.ts); released on unmount too, which
+// matters because this header unmounts when navigating to/from the home page.
+useScrollLock(open)
 watch(() => route.fullPath, () => (open.value = false))
-watch(open, (v) => {
-  const lenis = useLenis()
-  if (v) lenis?.stop()
-  else lenis?.start()
-  if (import.meta.client) document.documentElement.style.overflow = v ? 'hidden' : ''
-})
+// Links to the current page don't change the route, so close on click as well.
+const close = () => (open.value = false)
 
 onMounted(() => {
   const onScroll = () => (stuck.value = window.scrollY > (props.variant === 'hero' ? 520 : 220))
@@ -34,7 +33,6 @@ onMounted(() => {
   onBeforeUnmount(() => {
     window.removeEventListener('scroll', onScroll)
     window.removeEventListener('keydown', onKey)
-    document.documentElement.style.overflow = ''
   })
 })
 const ease = [0.2, 0.7, 0.2, 1] as const
@@ -138,8 +136,8 @@ const ease = [0.2, 0.7, 0.2, 1] as const
         :transition="{ duration: 0.6, ease }"
       >
         <div class="flex items-center justify-between">
-          <BrandLockup />
-          <button type="button" class="inline-flex h-11 items-center rounded-full bg-ink px-[18px] text-[12px] font-semibold uppercase tracking-[0.1em] text-paper" @click="open = false">{{ t('nav.close') }} ✕</button>
+          <BrandLockup @click="close" />
+          <button type="button" class="inline-flex h-11 items-center rounded-full bg-ink px-[18px] text-[12px] font-semibold uppercase tracking-[0.1em] text-paper" @click="close">{{ t('nav.close') }} ✕</button>
         </div>
         <ul class="mt-10 flex flex-1 flex-col justify-center gap-1">
           <li v-for="(item, i) in navigation" :key="item.key" class="overflow-hidden">
@@ -153,6 +151,7 @@ const ease = [0.2, 0.7, 0.2, 1] as const
                 :to="lp(item.to)"
                 class="font-display-x group flex items-baseline gap-3 text-[clamp(32px,9.5vw,88px)] [overflow-wrap:anywhere] font-bold leading-[0.95] hover:text-signal-ink"
                 :class="isActive(item.to) ? 'text-signal-ink' : ''"
+                @click="close"
               >
                 <span class="text-[13px] font-semibold tracking-[0.1em] text-ink-ghost">0{{ i + 1 }}</span>{{ t(`nav.${item.key}`) }}
               </NuxtLink>
@@ -160,7 +159,7 @@ const ease = [0.2, 0.7, 0.2, 1] as const
           </li>
         </ul>
         <div class="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-stone-deep pt-5">
-          <LanguageSwitcher />
+          <LanguageSwitcher @click="close" />
           <p class="label text-ink-soft">
             <a :href="`https://wa.me/${site.contact.whatsapp}`" class="hover:text-signal-ink">WA</a> /
             <a :href="`mailto:${site.contact.email}`" class="hover:text-signal-ink">Email</a> /

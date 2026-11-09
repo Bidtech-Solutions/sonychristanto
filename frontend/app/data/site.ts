@@ -43,6 +43,8 @@ export const site = {
     email: 'sony.c.batam@gmail.com',
     phoneDisplay: '+62 821 7400 7776',
     whatsapp: '6282174007776',
+    whatsappIcon: '/images/sosial/whatsapp.svg', // same rounded-square style as the social icons
+    emailIcon: '/images/sosial/email.svg',
     // Alamat kantor disembunyikan sementara (permintaan PM). Ubah ke true untuk
     // menampilkan kembali di footer, beranda, /kontak, JSON-LD, llms-full.txt, dan FAQ.
     showOffice: false,

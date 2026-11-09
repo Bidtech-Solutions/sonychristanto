@@ -22,19 +22,53 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   const isDashboard = (path: string) => path.startsWith('/dashboard')
 
+  // ------------------------------------------------------------ scroll lock
+  // Single owner of "page scroll is locked" (menu sheet, lightbox, ...).
+  // Each caller locks with its own id; scroll only resumes when every id is
+  // released. Components must never call lenis.stop()/start() themselves: a
+  // component unmounted while locked (e.g. the header that disappears when
+  // navigating to the home page) would otherwise leave `lenis-stopped` on
+  // <html> and freeze scrolling until a reload.
+  const locks = new Set<string>()
+  function applyLock() {
+    const locked = locks.size > 0
+    if (locked) lenis?.stop()
+    else lenis?.start()
+    root.style.overflow = locked ? 'hidden' : ''
+  }
+  const scrollLock = {
+    lock(id: string) {
+      locks.add(id)
+      applyLock()
+    },
+    unlock(id: string) {
+      if (!locks.delete(id)) return
+      applyLock()
+    },
+    releaseAll() {
+      locks.clear()
+      applyLock()
+    },
+  }
+
   function startLenis() {
-    if (reduced || lenis) return
+    if (reduced) return
+    if (lenis) {
+      applyLock()
+      return
+    }
     lenis = new Lenis({
       duration: 1.1,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       anchors: { offset: -96 },
       autoRaf: false,
-      // let native scrolling happen inside dialogs, editors and horizontal scrollers
+      // let native scrolling happen inside dialogs, editors and vertical overlays
       prevent: (node) => !!node.closest?.('dialog, [data-lenis-prevent], .bn-container'),
     })
     lenis.on('scroll', ScrollTrigger.update)
     gsap.ticker.add(raf)
     gsap.ticker.lagSmoothing(0)
+    applyLock()
   }
   function raf(time: number) {
     lenis?.raf(time * 1000)
@@ -103,9 +137,17 @@ export default defineNuxtPlugin((nuxtApp) => {
   function afterPage() {
     nextTick(() => {
       requestAnimationFrame(() => {
+        lenis?.resize()
         setupReveals()
         setupParallax()
         ScrollTrigger.refresh()
+        const hash = router.currentRoute.value.hash
+        if (hash) {
+          const target = document.querySelector<HTMLElement>(hash)
+          if (target) {
+            lenis ? lenis.scrollTo(target, { offset: -96, force: true }) : target.scrollIntoView()
+          }
+        }
       })
     })
   }
@@ -119,13 +161,36 @@ export default defineNuxtPlugin((nuxtApp) => {
   })
   nuxtApp.hook('page:finish', () => {
     const path = router.currentRoute.value.path
+    // Nothing that locks scroll survives a navigation (the menu closes on
+    // route change, the lightbox unmounts) — drop any lock left behind.
+    locks.clear()
     if (isDashboard(path)) stopLenis()
     else startLenis()
+    applyLock() // also covers reduced motion / dashboard, where there is no Lenis
     if (!router.currentRoute.value.hash) {
       lenis ? lenis.scrollTo(0, { immediate: true, force: true }) : window.scrollTo(0, 0)
     }
     afterPage()
   })
+  // Safety net for the reveal contract: [data-reveal]/[data-split] nodes that
+  // mount AFTER a page has been scanned (tab panels, pagination, v-if content)
+  // would otherwise stay at opacity 0 forever. Arm them as they appear.
+  if (!reduced) {
+    let queued = false
+    const hasPending = (n: Node) =>
+      n instanceof Element && (n.matches('[data-reveal]:not([data-revealed]), [data-split]:not([data-revealed])') || !!n.querySelector('[data-reveal]:not([data-revealed]), [data-split]:not([data-revealed])'))
+    new MutationObserver((records) => {
+      if (queued || isDashboard(router.currentRoute.value.path)) return
+      if (!records.some((r) => Array.from(r.addedNodes).some(hasPending))) return
+      queued = true
+      requestAnimationFrame(() => {
+        queued = false
+        setupReveals()
+        setupParallax()
+      })
+    }).observe(document.body, { childList: true, subtree: true })
+  }
+
   // Refresh trigger positions once fonts and late images settle.
   document.fonts?.ready.then(() => ScrollTrigger.refresh())
   window.addEventListener('load', () => ScrollTrigger.refresh(), { once: true })
@@ -135,6 +200,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       gsap,
       ScrollTrigger,
       lenis: () => lenis,
+      scrollLock,
       motionReduced: reduced,
       refreshReveals: afterPage,
     },

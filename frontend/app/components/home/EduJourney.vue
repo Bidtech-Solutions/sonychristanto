@@ -13,6 +13,15 @@ const go = (k: number) => (i.value = (k + n) % n)
 const cur = computed(() => EDU[i.value]!)
 const pos = EDU.map((e) => projectLonLat(e.lon, e.lat))
 const pct = (start: number) => `${(((start - 1980) / (2026 - 1980)) * 100).toFixed(1)}%`
+// On mobile the 1990 (21.7%) and 1993 (28.3%) nodes sit only 6.6% apart (~17px),
+// so enforce a minimum 15% gap between adjacent nodes below `md`.
+const mobPcts = (() => {
+  const raw = EDU.map((e) => ((e.start - 1980) / (2026 - 1980)) * 100)
+  for (let k = 1; k < raw.length - 1; k++) {
+    if (raw[k]! - raw[k - 1]! < 15) raw[k] = raw[k - 1]! + 15
+  }
+  return raw.map((v) => `${v.toFixed(1)}%`)
+})()
 const coord = (e: (typeof EDU)[number]) => `${Math.abs(e.lat).toFixed(2)}°${e.lat < 0 ? 'LS' : 'LU'} · ${e.lon.toFixed(2)}°BT`
 const routeAll = pos.map((p) => `${p.x},${p.y}`).join(' ')
 
@@ -34,7 +43,7 @@ function onKey(e: KeyboardEvent) {
 </script>
 
 <template>
-  <section id="pendidikan" class="sec flex flex-col gap-12 md:pb-20 md:pt-24" @keydown="onKey">
+  <section id="pendidikan" class="sec flex flex-col gap-12 overflow-x-clip md:pb-20 md:pt-24" @keydown="onKey">
     <SectionHead :eyebrow="t('home.eduEyebrow')" :title="t('home.eduTitle')">
       <div class="flex items-center gap-3" data-reveal>
         <span class="font-display-x mr-2 text-[22px] font-semibold tabular-nums" aria-live="polite">0{{ i + 1 }} / 0{{ n }}</span>
@@ -47,16 +56,16 @@ function onKey(e: KeyboardEvent) {
       </div>
     </SectionHead>
 
-    <div class="grid items-center gap-8 md:grid-cols-2 md:gap-16">
+    <div class="grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-16">
       <!-- Photo stack -->
-      <div data-reveal="left" class="relative px-1 pb-10 pt-6 md:pl-3 md:pr-7">
+      <div data-reveal="left" class="relative min-w-0 px-3 pb-10 pt-6 md:pl-3 md:pr-7">
         <div aria-hidden="true" class="absolute inset-x-[34px] inset-y-[30px] rotate-[3.5deg] rounded-[22px] bg-stone" />
         <div aria-hidden="true" class="absolute bottom-9 left-[22px] right-[26px] top-[26px] -rotate-[1.5deg] rounded-[22px] bg-stone-deep" />
         <AnimatePresence mode="wait" :custom="dir">
           <Motion
             :key="cur.code"
             as="figure"
-            class="relative m-0 rounded-[22px] bg-white p-4 shadow-[0_24px_50px_rgba(0,0,0,0.08)]"
+            class="relative m-0 rounded-[22px] bg-white p-3 shadow-[0_24px_50px_rgba(0,0,0,0.08)] sm:p-4"
             :initial="{ opacity: 0, rotate: dir * 6 - 3, x: dir * 40 }"
             :animate="{ opacity: 1, rotate: -3, x: 0 }"
             :exit="{ opacity: 0, rotate: -dir * 6 - 3, x: -dir * 40 }"
@@ -64,7 +73,7 @@ function onKey(e: KeyboardEvent) {
           >
             <div class="relative aspect-[4/3] overflow-hidden rounded-[14px] bg-stone">
               <img :src="cur.image" :alt="tx(cur.imageAlt)" class="absolute inset-0 size-full object-cover" loading="lazy" decoding="async" width="1200" height="900" />
-              <span aria-hidden="true" class="font-display-x absolute -bottom-3.5 left-3.5 text-[88px] font-bold leading-[0.85] text-white [text-shadow:0_2px_20px_rgba(0,0,0,0.25)]">{{ cur.code }}</span>
+              <span aria-hidden="true" class="font-display-x absolute -bottom-2.5 left-3 text-[56px] font-bold leading-[0.85] text-white [text-shadow:0_2px_20px_rgba(0,0,0,0.25)] sm:text-[72px] md:-bottom-3.5 md:left-3.5 md:text-[88px]">{{ cur.code }}</span>
             </div>
             <figcaption class="sr-only">{{ tx(cur.place) }}. {{ tx(cur.credit) }}</figcaption>
           </Motion>
@@ -72,15 +81,15 @@ function onKey(e: KeyboardEvent) {
       </div>
 
       <!-- Text + route map -->
-      <div class="flex flex-col gap-5" data-reveal="right">
+      <div class="flex min-w-0 flex-col gap-5" data-reveal="right">
         <AnimatePresence mode="wait">
-          <Motion :key="cur.code" as="div" class="flex flex-col gap-5" :initial="{ opacity: 0, y: 16 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -12 }" :transition="{ duration: 0.35 }">
+          <Motion :key="cur.code" as="div" class="flex min-w-0 flex-col gap-5" :initial="{ opacity: 0, y: 16 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -12 }" :transition="{ duration: 0.35 }">
             <span class="eyebrow">{{ cur.period }} · {{ tx(cur.level) }}</span>
-            <h3 class="font-display-x m-0 text-[36px] font-semibold leading-[0.92] md:text-[52px]">{{ cur.institution }}</h3>
+            <h3 class="font-display-x m-0 text-[clamp(26px,7.2vw,36px)] font-semibold leading-[0.92] [overflow-wrap:anywhere] md:text-[52px]">{{ cur.institution }}</h3>
             <p class="m-0 text-[18px] leading-relaxed text-ink-soft">{{ tx(cur.desc) }}</p>
           </Motion>
         </AnimatePresence>
-        <div class="relative rounded-[20px] bg-stone px-5 pb-3 pt-[18px]">
+        <div class="relative overflow-hidden rounded-[20px] bg-stone px-4 pb-3 pt-[18px] sm:px-5">
           <span class="label-sm text-ink-soft">{{ t('home.eduRoute') }}</span>
           <svg role="img" :aria-label="t('home.eduMapLabel', { city: cur.city })" :viewBox="EDU_MAP_VIEWBOX" class="mt-1.5 block h-auto w-full">
             <path :d="EDU_MAP_REGION" fill="#DEDBD5" />
@@ -107,17 +116,17 @@ function onKey(e: KeyboardEvent) {
     </div>
 
     <!-- Year rail -->
-    <div class="relative mx-6 h-24" data-reveal>
+    <div class="relative mx-4 h-24 md:mx-6" data-reveal>
       <div aria-hidden="true" class="absolute inset-x-0 top-[30px] h-0.5 bg-stone-deep" />
-      <div aria-hidden="true" class="absolute left-0 top-[30px] h-0.5 bg-signal transition-[width] duration-700 ease-[var(--ease-signal)]" :style="{ width: pct(cur.start) }" />
+      <div aria-hidden="true" class="absolute left-0 top-[30px] h-0.5 w-[var(--p-mob)] bg-signal transition-[width] duration-700 ease-[var(--ease-signal)] md:w-[var(--p-desk)]" :style="{ '--p-mob': mobPcts[i], '--p-desk': pct(cur.start) }" />
       <span aria-hidden="true" class="absolute left-0 top-[70px] text-[12px] font-medium tracking-[0.08em] text-ink-soft">1980</span>
       <span aria-hidden="true" class="absolute right-0 top-[70px] text-[12px] font-medium tracking-[0.08em] text-ink-soft">2026</span>
       <button
         v-for="(e, k) in EDU"
         :key="e.code"
         type="button"
-        class="absolute top-0 flex size-16 -translate-x-1/2 flex-col items-center gap-1"
-        :style="{ left: pct(e.start) }"
+        class="absolute left-[var(--p-mob)] top-0 flex h-16 w-11 -translate-x-1/2 flex-col items-center gap-1 md:left-[var(--p-desk)] md:w-16"
+        :style="{ '--p-mob': mobPcts[k], '--p-desk': pct(e.start) }"
         :aria-label="`${tx(e.level)}, ${e.institution}, ${e.period}`"
         :aria-pressed="k === i"
         @click="go(k)"

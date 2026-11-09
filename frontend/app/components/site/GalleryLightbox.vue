@@ -10,15 +10,10 @@ const dialog = ref<HTMLDialogElement>()
 const current = computed(() => (index.value === null ? null : props.items[index.value]))
 const dir = ref(1)
 
+useScrollLock(computed(() => index.value !== null))
 watch(index, (i) => {
-  const lenis = useLenis()
-  if (i === null) {
-    dialog.value?.close()
-    lenis?.start()
-  } else if (!dialog.value?.open) {
-    dialog.value?.showModal()
-    lenis?.stop()
-  }
+  if (i === null) dialog.value?.close()
+  else if (!dialog.value?.open) dialog.value?.showModal()
 })
 
 const go = (step: number) => {

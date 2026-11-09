@@ -29,21 +29,30 @@ useGsap(careerLine, (gsap) => {
 <template>
   <div class="page-root">
     <!-- Hero -->
-    <section class="panel grid min-h-[700px] bg-stone md:grid-cols-[1.1fr_0.9fr]">
+    <!-- grid-cols-1 = minmax(0,1fr): an implicit column would grow to the unbreakable
+         "CHRISTANTO", wider than the panel (overflow-hidden), clipping the title and
+         subtitle and pushing the photo off-centre. Two columns only from lg; on
+         tablets the photo column was squeezed to ~120px. -->
+    <section class="panel grid min-h-[700px] grid-cols-1 bg-stone lg:grid-cols-[1.1fr_0.9fr]">
       <span aria-hidden="true" class="font-display-x pointer-events-none absolute -right-[2%] top-[4%] whitespace-nowrap text-[30vw] font-bold leading-[0.8] tracking-[-0.04em] text-stone-ghost md:text-[15vw]">{{ t('bio.ghost') }}</span>
-      <div class="relative z-[2] flex flex-col justify-between gap-10 px-5 py-10 md:px-12 md:py-14">
+      <!-- min-w-0 below lg only: the desktop layout is left exactly as it was. -->
+      <div class="relative z-[2] flex min-w-0 flex-col justify-between gap-10 px-5 py-10 md:px-12 md:py-14 lg:min-w-auto">
         <Breadcrumbs :items="[{ name: t('bio.title'), path: '/biografi' }]" />
         <div class="flex flex-col gap-5">
-          <RevealText as="h1" trigger="load" class="font-display-x m-0 text-[15vw] font-bold leading-[0.86] tracking-[-0.035em] md:text-[clamp(64px,8.4vw,128px)]" :lines="[{ text: 'Sony' }, { text: 'Christanto', indent: '8%' }]" />
+          <!-- 10.5vw: "CHRISTANTO" is ~7.7× its font size wide, so 15vw never fit a phone.
+               Indent only from md, where there is room for it. -->
+          <RevealText as="h1" trigger="load" class="font-display-x m-0 text-[10.5vw] font-bold leading-[0.86] tracking-[-0.035em] md:text-[clamp(64px,8.4vw,128px)]" :lines="[{ text: 'Sony' }, { text: 'Christanto', class: 'md:pl-[8%]' }]" />
           <p data-reveal class="font-display-m m-0 text-[18px] font-semibold uppercase md:text-[22px]">
             {{ site.honorificSuffix }} <span class="text-signal">/</span> {{ tx(site.jobTitle) }} <span class="text-signal">/</span> {{ tx(site.commission) }}
           </p>
         </div>
         <span aria-hidden="true" />
       </div>
-      <div class="relative min-h-[460px]">
+      <!-- Photo height follows its own box below lg (single column), so the 680px
+           desktop cutout never climbs over the text on tablets. -->
+      <div class="relative min-h-[460px] md:min-h-[560px]">
         <LightGrid class="absolute left-[8%] top-[12%] h-[66%] w-[80%]" :opacity="0.45" interactive />
-        <img data-reveal="up" :src="cut.src" :alt="tx(cut.alt)" :width="cut.width" :height="cut.height" fetchpriority="high" class="absolute -bottom-[30px] left-1/2 h-[460px] w-auto max-w-none -translate-x-1/2 drop-shadow-[0_26px_34px_rgba(0,0,0,0.14)] md:h-[680px]" />
+        <img data-reveal="up" :src="cut.src" :alt="tx(cut.alt)" :width="cut.width" :height="cut.height" fetchpriority="high" class="absolute -bottom-[30px] left-1/2 h-[460px] w-auto max-w-none -translate-x-1/2 drop-shadow-[0_26px_34px_rgba(0,0,0,0.14)] md:h-[560px] lg:h-[680px]" />
       </div>
     </section>
 
@@ -102,11 +111,11 @@ useGsap(careerLine, (gsap) => {
     </section>
 
     <!-- 03 Pendidikan -->
-    <section id="pendidikan" class="sec flex flex-col gap-9">
+    <section id="pendidikan" class="sec flex flex-col gap-9 overflow-x-clip">
       <div class="flex flex-wrap items-end justify-between gap-5">
-        <div class="flex flex-col gap-3.5">
+        <div class="flex min-w-0 flex-col gap-3.5">
           <span data-reveal class="eyebrow">03 · {{ t('bio.education') }}</span>
-          <h2 data-reveal class="h2-display" v-html="t('bio.educationTitle')" />
+          <h2 data-reveal class="h2-display max-md:text-[clamp(26px,7.5vw,34px)]!" v-html="t('bio.educationTitle')" />
         </div>
         <span data-reveal class="label text-ink-soft">{{ t('bio.educationMeta', { n: biography.education.length }) }}</span>
       </div>
@@ -115,16 +124,16 @@ useGsap(careerLine, (gsap) => {
           v-for="(e, k) in biography.education"
           :key="e.code"
           data-reveal
-          class="group m-0 grid overflow-hidden rounded-[22px] shadow-[0_1px_0_rgba(0,0,0,0.04)] md:grid-cols-[360px_minmax(0,1fr)]"
+          class="group m-0 grid grid-cols-1 overflow-hidden rounded-[22px] shadow-[0_1px_0_rgba(0,0,0,0.04)] md:grid-cols-[360px_minmax(0,1fr)]"
           :class="k === lastEdu ? 'bg-ink text-paper' : 'bg-white'"
         >
           <div class="relative aspect-[4/3] overflow-hidden bg-stone-deep">
             <img :src="e.image" :alt="tx(e.imageAlt)" class="size-full object-cover transition-transform duration-500 ease-[var(--ease-signal)] group-hover:scale-[1.04]" loading="lazy" decoding="async" width="1200" height="900" />
-            <span aria-hidden="true" class="font-display-x absolute -bottom-2.5 left-3 text-[88px] font-bold leading-[0.85] text-white [text-shadow:0_2px_20px_rgba(0,0,0,0.25)]">{{ e.code }}</span>
+            <span aria-hidden="true" class="font-display-x absolute -bottom-2 left-3 text-[56px] font-bold leading-[0.85] text-white [text-shadow:0_2px_20px_rgba(0,0,0,0.25)] sm:text-[72px] md:-bottom-2.5 md:text-[88px]">{{ e.code }}</span>
           </div>
-          <figcaption class="flex flex-col justify-center gap-2.5 px-6 py-7 md:px-10 md:py-8">
+          <figcaption class="flex min-w-0 flex-col justify-center gap-2.5 px-5 py-6 sm:px-6 sm:py-7 md:px-10 md:py-8">
             <span class="label-sm opacity-75">{{ e.period }} · {{ tx(e.level) }}</span>
-            <span class="font-display-m text-[28px] font-semibold uppercase leading-[0.95] tracking-[-0.01em] md:text-[40px]">{{ e.institution }}</span>
+            <span class="font-display-m text-[clamp(22px,6.2vw,28px)] font-semibold uppercase leading-[0.95] tracking-[-0.01em] [overflow-wrap:anywhere] md:text-[40px]">{{ e.institution }}</span>
             <span class="text-[14px] opacity-80">{{ tx(e.place) }}</span>
           </figcaption>
         </figure>

@@ -25,13 +25,18 @@ const ig = site.social.find((s) => s.key === 'instagram')!
 const tt = site.social.find((s) => s.key === 'tiktok')!
 const li = site.social.find((s) => s.key === 'linkedin')!
 const channels = computed(() => [
-  { no: '01', key: 'wa', icon: '', label: 'WhatsApp', value: site.contact.phoneDisplay, href: `https://wa.me/${site.contact.whatsapp}`, action: t('contact.chatNow'), tone: 'signal', copy: site.contact.phoneDisplay },
-  { no: '02', key: 'em', icon: '', label: 'Email', value: site.contact.email, href: `mailto:${site.contact.email}`, action: t('contact.sendEmail'), tone: 'ink', copy: site.contact.email },
+  { no: '01', key: 'wa', icon: site.contact.whatsappIcon, label: 'WhatsApp', value: site.contact.phoneDisplay, href: `https://wa.me/${site.contact.whatsapp}`, action: t('contact.chatNow'), tone: 'signal', copy: site.contact.phoneDisplay },
+  { no: '02', key: 'em', icon: site.contact.emailIcon, label: 'Email', value: site.contact.email, href: `mailto:${site.contact.email}`, action: t('contact.sendEmail'), tone: 'ink', copy: site.contact.email },
   { no: '03', key: 'ig', icon: ig.icon, label: 'Instagram', value: ig.handle, href: ig.url, action: t('contact.openProfile'), tone: 'ink' },
   { no: '04', key: 'li', icon: li.icon, label: 'LinkedIn', value: 'Sony Christanto', href: li.url, action: t('contact.openProfile'), tone: 'ink' },
   { no: '05', key: 'fb', icon: fb.icon, label: 'Facebook', value: fb.handle, href: fb.url || '', action: t('contact.openProfile'), tone: fb.url ? 'ink' : 'muted' },
   { no: '06', key: 'tt', icon: tt.icon, label: 'TikTok', value: tt.handle, href: tt.url || '', action: t('contact.openProfile'), tone: tt.url ? 'ink' : 'muted' },
 ])
+// Emails may only break right after "@" (rendered with <wbr>), never mid-word.
+const emailParts = (v: string) => {
+  const at = v.indexOf('@')
+  return at > 0 ? [v.slice(0, at + 1), v.slice(at + 1)] : null
+}
 const cut = site.cutouts.handsClasped
 </script>
 
@@ -62,26 +67,42 @@ const cut = site.cutouts.handsClasped
         <span data-reveal class="label text-ink-soft">WA / Email / IG / LinkedIn / FB / TikTok</span>
       </div>
       <div class="flex flex-col border-t border-ink">
-        <div v-for="ch in channels" :key="ch.key" data-reveal class="group flex flex-wrap items-center gap-x-7 gap-y-3.5 border-b border-stone-deep px-3 py-7 transition-colors duration-300 hover:bg-signal-tint">
-          <span class="font-display-x w-12 flex-none text-[20px] font-semibold text-ink-ghost">{{ ch.no }}</span>
-          <span class="label-sm flex w-40 flex-none items-center gap-2.5 text-ink-soft">
-            <img v-if="ch.icon" :src="ch.icon" alt="" width="28" height="28" class="size-7 rounded-[7px]" loading="lazy" />{{ ch.label }}
+        <!-- Fixed grid per breakpoint (was flex-wrap with fixed widths, which broke each
+             row differently below ~1000px):
+               mobile   no | label            tablet  no | label | value      xl  no | label | value | actions
+                        value (full)                              actions
+                        [copy][action]                                                                              -->
+        <div
+          v-for="ch in channels"
+          :key="ch.key"
+          data-reveal
+          class="group grid grid-cols-[40px_minmax(0,1fr)] items-center gap-x-3 gap-y-4 border-b border-stone-deep px-3 py-7 transition-colors duration-300 hover:bg-signal-tint md:grid-cols-[48px_160px_minmax(0,1fr)] md:gap-x-7 xl:grid-cols-[48px_160px_minmax(0,1fr)_auto]"
+        >
+          <span class="font-display-x text-[20px] font-semibold text-ink-ghost">{{ ch.no }}</span>
+          <span class="label-sm flex items-center gap-2.5 text-ink-soft">
+            <img v-if="ch.icon" :src="ch.icon" alt="" width="28" height="28" class="size-7 flex-none rounded-[7px]" loading="lazy" />
+            <span v-else aria-hidden="true" class="size-7 flex-none" />{{ ch.label }}
           </span>
-          <span class="font-display-m flex-[1_1_360px] text-[24px] font-semibold leading-none tracking-[-0.01em] [overflow-wrap:anywhere] transition-colors group-hover:text-signal-ink md:text-[40px]">{{ ch.value }}</span>
-          <button v-if="ch.copy" type="button" class="btn-line h-12 min-w-[110px] px-[18px]" @click="copy(ch.key, ch.copy)">
-            <AnimatePresence mode="wait">
-              <Motion :key="copyLabel(ch.key)" as="span" :initial="{ y: 8, opacity: 0 }" :animate="{ y: 0, opacity: 1 }" :exit="{ y: -8, opacity: 0 }" :transition="{ duration: 0.18 }">{{ copyLabel(ch.key) }}</Motion>
-            </AnimatePresence>
-          </button>
-          <a
-            v-if="ch.href"
-            :href="ch.href"
-            :target="['ig', 'li', 'fb', 'tt'].includes(ch.key) ? '_blank' : undefined"
-            rel="noopener"
-            class="btn h-13 min-w-[200px] justify-between max-md:w-full"
-            :class="ch.tone === 'signal' ? 'bg-signal text-white hover:bg-ink' : 'bg-ink text-paper hover:bg-signal'"
-          >{{ ch.action }} <span class="arrow-nudge">↗</span></a>
-          <span v-else class="btn h-13 min-w-[200px] justify-between bg-stone-deep text-ink max-md:w-full" aria-disabled="true">{{ ch.action }} <span>↗</span></span>
+          <span class="font-display-m col-span-2 break-words text-[clamp(20px,6vw,24px)] font-semibold leading-[1.05] tracking-[-0.01em] transition-colors group-hover:text-signal-ink md:col-span-1 md:text-[clamp(28px,3.6vw,40px)] xl:text-[clamp(32px,2.8vw,40px)]">
+            <template v-if="ch.key === 'em' && emailParts(ch.value)">{{ emailParts(ch.value)![0] }}<wbr>{{ emailParts(ch.value)![1] }}</template>
+            <template v-else>{{ ch.value }}</template>
+          </span>
+          <div class="col-span-2 grid grid-cols-[auto_minmax(0,1fr)] gap-3 md:col-span-1 md:col-start-3 md:flex md:flex-wrap xl:col-start-4 xl:row-start-1 xl:flex-nowrap xl:justify-end">
+            <button v-if="ch.copy" type="button" class="btn-line h-13 px-4 md:min-w-[110px] md:px-[18px]" @click="copy(ch.key, ch.copy)">
+              <AnimatePresence mode="wait">
+                <Motion :key="copyLabel(ch.key)" as="span" :initial="{ y: 8, opacity: 0 }" :animate="{ y: 0, opacity: 1 }" :exit="{ y: -8, opacity: 0 }" :transition="{ duration: 0.18 }">{{ copyLabel(ch.key) }}</Motion>
+              </AnimatePresence>
+            </button>
+            <a
+              v-if="ch.href"
+              :href="ch.href"
+              :target="['ig', 'li', 'fb', 'tt'].includes(ch.key) ? '_blank' : undefined"
+              rel="noopener"
+              class="btn h-13 justify-between max-md:px-4 md:min-w-[200px]"
+              :class="[ch.tone === 'signal' ? 'bg-signal text-white hover:bg-ink' : 'bg-ink text-paper hover:bg-signal', ch.copy ? '' : 'col-span-2']"
+            >{{ ch.action }} <span class="arrow-nudge">↗</span></a>
+            <span v-else class="btn h-13 justify-between bg-stone-deep text-ink max-md:px-4 md:min-w-[200px]" :class="ch.copy ? '' : 'col-span-2'" aria-disabled="true">{{ ch.action }} <span>↗</span></span>
+          </div>
         </div>
       </div>
     </section>

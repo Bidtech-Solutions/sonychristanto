@@ -82,7 +82,7 @@ const cut = site.cutouts.writing
         <div v-if="rest.length" class="grid gap-x-6 gap-y-8 sm:grid-cols-2">
           <ArticleCard v-for="a in rest" :key="a.slug" :article="a" heading-level="h3" />
         </div>
-        <EmptyState v-else-if="!lead" :title="t('blog.emptyTitle')" :text="t('blog.emptyText')" />
+        <EmptyState v-else-if="!lead" :title="t('blog.emptyTitle')" :text="category ? t('blog.emptyCategory', { category: catLabel(category) }) : t('blog.emptyText')" />
         <nav v-if="meta && meta.total > 0" :aria-label="t('common.page', { page: meta.page, total: meta.total_pages })" class="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-stone-deep pt-5">
           <span class="text-[13px] text-ink-soft">{{ t('common.showing', { from, to, total: meta.total }) }}</span>
           <span class="flex gap-2">

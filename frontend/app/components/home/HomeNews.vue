@@ -38,7 +38,10 @@ const cut = site.cutouts.glance
 
     <AnimatePresence mode="wait">
       <Motion v-if="featured" :key="active" as="div" class="grid gap-4 lg:grid-cols-[1.5fr_1fr]" :initial="{ opacity: 0, y: 20 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -12 }" :transition="{ duration: 0.4 }">
-        <NuxtLink :to="lp(`/blog/${featured.slug}`)" class="group grid overflow-hidden rounded-[28px] sm:grid-cols-2" data-reveal>
+        <!-- No [data-reveal] inside the tab panel: it is re-created on every tab
+             switch, after the motion plugin has scanned the page, and the Motion
+             wrapper already animates it in. -->
+        <NuxtLink :to="lp(`/blog/${featured.slug}`)" class="group grid overflow-hidden rounded-[28px] sm:grid-cols-2">
           <span class="relative block min-h-[280px] overflow-hidden bg-stone-deep">
             <img v-if="featured.banner_url" :src="featured.banner_url" :alt="featured.banner_alt" class="absolute inset-0 size-full object-cover transition-transform duration-700 ease-[var(--ease-signal)] group-hover:scale-[1.05]" loading="lazy" decoding="async" />
             <template v-else>
@@ -59,7 +62,6 @@ const cut = site.cutouts.glance
             :to="lp(`/blog/${a.slug}`)"
             class="group flex flex-1 flex-col justify-center gap-3 border-t px-2 py-7 transition-colors hover:bg-signal-tint"
             :class="k === 0 ? 'border-ink' : 'border-stone-deep border-b'"
-            data-reveal
           >
             <span class="label-sm self-start rounded-full bg-signal-tint px-3 py-1.5 text-signal-ink">{{ label(a.category.key) }}</span>
             <span class="font-display-x text-[22px] font-semibold leading-none group-hover:text-signal-ink md:text-[24px]">{{ a.title }} <span class="arrow-nudge text-signal">↗</span></span>
@@ -67,7 +69,9 @@ const cut = site.cutouts.glance
           </NuxtLink>
         </div>
       </Motion>
-      <EmptyState v-else :key="`empty-${active}`" :text="t('blog.emptyText')" />
+      <Motion v-else :key="`empty-${active}`" as="div" :initial="{ opacity: 0, y: 20 }" :animate="{ opacity: 1, y: 0 }" :exit="{ opacity: 0, y: -12 }" :transition="{ duration: 0.4 }">
+        <EmptyState :reveal="false" :text="t('blog.emptyCategory', { category: label(active) })" />
+      </Motion>
     </AnimatePresence>
 
     <MagneticWrap class="self-start">
