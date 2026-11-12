@@ -149,9 +149,9 @@ Footer ends with "CHRISTANTO" in display type at ~12.5vw, `stone-deep`, cropped 
 
 **Photo**: studio cutouts with background removed (transparent). Default `berdiri` (full body, facing camera). Never boxed. Soft blurred ellipse shadow under the feet.
 
-**Desktop (stone panel, 868px)**: top bar; masthead `<h1>` "SONY CHRISTANTO" one line centered; cutout ~720px tall **in front of** the masthead (head covers at most the middle letters); cover lines left (`JABATAN`, `KIPRAH`, `PENDIDIKAN`) and right (`PESAN`, latest `PERSPEKTIF SONY` article — hidden if none, `KENALI LEBIH DEKAT ↗`) with 1px ink leader lines ending in an 8px dot; red band at the bottom, feet resting on it.
+**Desktop (stone panel, 908px)**: top bar; masthead `<h1>` "SONY CHRISTANTO" one line centered; cutout ~720px tall **in front of** the masthead (head covers at most the middle letters); cover lines left (`JABATAN`, `KIPRAH`, `PENDIDIKAN`) and right (`PESAN`, latest `PERSPEKTIF SONY` article — hidden if none, `KENALI LEBIH DEKAT ↗`) with 1px ink leader lines ending in an 8px dot; red band at the bottom, 12px below the feet (never overlapping them).
 
-**Mobile (820px)**: logo + `MENU`; masthead two lines `SONY` (26vw) / `CHRISTANTO` (11.4vw); cutout ~600px; two paper chips (`JABATAN` left, `KIPRAH` right); band 52px. Name, title and "Anggota DPRD Kota Batam" visible without scrolling.
+**Mobile (838px)**: logo + `MENU`; masthead two lines `SONY` (26vw) / `CHRISTANTO` (11.4vw); cutout ~600px; two paper chips (`JABATAN` left, `KIPRAH` right); band 52px. Name, title and "Anggota DPRD Kota Batam" visible without scrolling.
 
 Cover lines show only CV facts, the latest real article, or placeholders. Leader lines and shadow are `aria-hidden`. Date of birth is not on the hero; it appears on Biografi (facts list + FAQ). Religion is never shown (PRD K-2).
 
@@ -194,14 +194,13 @@ Libraries: **Lenis** (smooth scroll), **GSAP + ScrollTrigger** (scroll-linked an
 - Split/animated headings keep the full text in `aria-label`; marquee content is also a static list; pause control.
 - Skip link, landmarks, `lang` per locale (`id-ID` / `en-US`); articles carry `lang="id"`.
 
-## 10a. Logo (approved 7 Nov 2026)
+## 10a. Logo (diganti 12 Nov 2026, disetujui klien)
 
-- **Icon:** stencil portrait of Sony Christanto in three tones (paper `#F4F3F0`, stone `#CFCBC4`, ink `#0B0B0B`) inside a perfect `signal` circle. No ring/ornament/text inside.
-- **Wordmark:** "SONY CHRISTANTO" Archivo 700 semi-expanded, two lines; optional tagline "YANG MUDA BERKARYA" Inter 600, 0.22em, `signal-ink`.
+- **Icon:** badge "Sahabat Sony" — ilustrasi Sony Christanto (jaket merah) di dalam perisai merah-navy dengan pita navy bertulisan **SONY** dan label **SAHABAT**. Sumber tunggal: `frontend/app/assets/brand/logo-source.jpeg` (1600×1600, latar putih). Menggantikan logo potret stensil (7 Nov 2026).
+- **Wordmark:** "SONY CHRISTANTO" Archivo 700 semi-expanded, two lines; optional tagline "YANG MUDA BERKARYA" Inter 600, 0.22em, `signal-ink` (tetap dipakai di samping badge).
 - **Lockups:** navbar = icon 52px + wordmark 15px; footer = icon 88px + wordmark 34px + tagline.
-- **Variants:** red (primary), mono, on-red.
-- **Favicon:** logo bulat yang sama dengan Logo.dc.html (versi 64/32/16 px): `favicon.svg`, `favicon.ico` (16/32/48), `favicon-32x32.png`, `favicon-64x64.png`, `apple-touch-icon.png`; semuanya dibuat `npm run brand:build`.
-- A designer should hand-refine the traced paths before final production.
+- **File (semua dibuat `npm run brand:build`, WebP):** latar putih di luar badge dibuat transparan (closing morfologis supaya putih di dalam badge tetap), di-trim lalu dijadikan persegi → `images/logo/logo-sony-christanto-{128,256,512}.webp` (`<BrandMark>` memakai `srcset`). Tidak ada varian mono/on-red lagi.
+- **Favicon:** di 16–64px badge utuh tidak terbaca, jadi ukuran kecil memakai crop wajah dalam lingkaran: `favicon-32x32.webp`, `favicon-64x64.webp`, `favicon.ico` (16/32/48, fallback untuk permintaan `/favicon.ico`). `favicon-192x192.webp` (Android) dan `apple-touch-icon.png` (180, latar putih; iOS tidak menerima WebP) memakai badge utuh.
 
 ## 11. Do / Don't
 
@@ -219,7 +218,7 @@ Tailwind v4 `@theme` in `frontend/app/assets/css/main.css` (`bg-paper`, `bg-ston
 ### 12.2 Components
 | Motif | Component |
 |---|---|
-| Logo | `brand/BrandMark`, `brand/BrandLockup` (files from `app/assets/brand/logo-paths.ts` via `npm run brand:build`) |
+| Logo | `brand/BrandMark`, `brand/BrandLockup` (files from `app/assets/brand/logo-source.jpeg` via `npm run brand:build`) |
 | Top bar / footer | `site/SiteHeader` (`variant="hero" | "pill"`), `site/SiteFooter` |
 | Light grid | `site/LightGrid` |
 | Red band | `motion/RedBand` |
@@ -243,6 +242,6 @@ Design assets imported 7 Nov 2026 (cutouts, org logos, education photos), conver
 | `public/images/organisasi/<slug>.webp` | Org logos: `bmps-kepri`, `pgiw-kepri`, `gempar-indonesia-kepri`, `perbakin-kota-batam`, `bamagnas-kepri`, `koni-kota-batam`, `kadin-batam`, `mpk-kepri`, `bkag-batam`, `dewan-pendidikan-kota-batam`, `psi`, `nasdem` (square, transparent) |
 | `public/images/pendidikan/{sd,sma,s1,s2,ppnk}.webp` | Education building photos (4:3) — **photo credits still required** |
 | `public/images/sosial/{instagram,linkedin,facebook,tiktok}.webp` | Official social icons, 128px, rounded (Kontak rows, footer) |
-| `public/images/logo/logo-bulat-sony-christanto(-mono).svg` | Round badge logo with name + tagline (social media, print) |
+| `public/images/logo/logo-bulat-sony-christanto(-mono).webp` | Badge "Sahabat Sony" 1080×1080 di latar putih (aman untuk crop avatar bulat) — media sosial, cetak; versi mono = grayscale |
 
 New photos: `npm run images:optimize -- <folder> public/images/<dir>`. `npm run brand:build` regenerates logos/favicon and only writes placeholders for files that are **missing**.

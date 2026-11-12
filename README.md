@@ -59,7 +59,7 @@ Konten statis ditulis dwibahasa (`{ id: '…', en: '…' }`); teks tombol/label 
 
 Gambar statis: `cd frontend && npm run images:optimize -- <folder-foto> public/images/galeri` (WebP, maks 1920×1080, q80).
 
-**Foto dari desain.** Cutout Pak Sony, logo organisasi, dan foto gedung sekolah/kampus sudah ada di `frontend/public/images/{sony,organisasi,pendidikan}` (WebP, nama file tetap — daftar di `docs/DESIGN.md` §12.3). Untuk mengganti, timpa file dengan nama yang sama. `npm run brand:build` membuat ulang logo/favicon dari `app/assets/brand/logo-paths.ts` dan hanya mengisi placeholder yang filenya belum ada.
+**Foto dari desain.** Cutout Pak Sony, logo organisasi, dan foto gedung sekolah/kampus sudah ada di `frontend/public/images/{sony,organisasi,pendidikan}` (WebP, nama file tetap — daftar di `docs/DESIGN.md` §12.3). Untuk mengganti, timpa file dengan nama yang sama. `npm run brand:build` membuat ulang logo/favicon (WebP) dari `app/assets/brand/logo-source.jpeg` dan hanya mengisi placeholder yang filenya belum ada.
 
 ## Frontend: bahasa, SEO, animasi
 

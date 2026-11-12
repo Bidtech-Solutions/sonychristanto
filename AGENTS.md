@@ -38,7 +38,7 @@ cd frontend && npm run typecheck && npm run build
 13. **i18n `/id` & `/en` (strategi `prefix`).** Semua link publik lewat `lp()` dari `useL()` (= `useLocalePath`), jangan tulis `/biografi` mentah. Teks UI di `frontend/i18n/locales/{id,en}.json` (key sama di kedua file); konten di `app/data/*` ditulis `{ id, en }` dan dibaca dengan `tx()`. Halaman dashboard wajib `i18n: false` di `definePageMeta`. Artikel blog hanya berbahasa Indonesia: `/en/blog/**` = `noindex` + canonical ke `/id` dan tidak masuk sitemap.
 14. **Redirect `/` dan URL lama tanpa prefix** ada di `server/middleware/locale-redirect.ts`, **bukan** di `routeRules` (modul sitemap/robots membuang URL yang cocok dengan route rule redirect setelah prefix locale dilepas).
 15. **Motion**: Lenis + GSAP hanya di `plugins/motion.client.ts`; komponen memakai `useGsap(scopeRef, fn)` (otomatis revert & tidak jalan saat reduced motion). Konten tidak boleh disembunyikan di SSR: pakai `data-reveal`/`RevealText` (kontrak `html.js` di `app.vue` + fallback CSS). Saat GSAP menganimasikan elemen yang disembunyikan CSS lewat `translateY(%)`, sertakan `y: 0` pada `fromTo` (GSAP mem-parse transform CSS ke `y`). Tidak ada parallax/gerak pointer pada teks (DESIGN.md §9).
-16. Logo hanya dari `app/assets/brand/logo-paths.ts` → `npm run brand:build` (menulis SVG/PNG/favicon dan placeholder foto yang belum ada). Nama file foto di `public/images/**` tetap (DESIGN.md §12.3).
+16. Logo hanya dari `app/assets/brand/logo-source.jpeg` (badge "Sahabat Sony") → `npm run brand:build` (menulis logo WebP, favicon WebP + ICO, apple-touch PNG, dan placeholder foto yang belum ada). Jangan taruh file sumber di `public/`. Nama file foto di `public/images/**` tetap (DESIGN.md §12.3).
 
 ## Konvensi kode
 
