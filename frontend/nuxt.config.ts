@@ -23,6 +23,9 @@ const noindex = {
   headers: { 'X-Robots-Tag': 'noindex, nofollow', 'Cache-Control': 'no-store' },
 }
 
+// Favicon cache-buster (see app.head.link). 2 = "Sahabat Sony" logo, 12 Nov 2026.
+const BRAND_ICON_VERSION = 2
+
 const siteUrl = (process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
 
 // Dev in Docker on a Windows/macOS bind mount gets no file-change events, so
@@ -65,11 +68,12 @@ export default defineNuxtConfig({
   app: {
     head: {
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico', sizes: '16x16 32x32 48x48' },
-        { rel: 'icon', type: 'image/webp', href: '/favicon-32x32.webp', sizes: '32x32' },
-        { rel: 'icon', type: 'image/webp', href: '/favicon-64x64.webp', sizes: '64x64' },
-        { rel: 'icon', type: 'image/webp', href: '/favicon-192x192.webp', sizes: '192x192' },
-        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        // ?v= busts the browsers' sticky favicon cache; bump BRAND_ICON_VERSION when the logo changes.
+        { rel: 'icon', type: 'image/x-icon', href: `/favicon.ico?v=${BRAND_ICON_VERSION}`, sizes: '16x16 32x32 48x48' },
+        { rel: 'icon', type: 'image/webp', href: `/favicon-32x32.webp?v=${BRAND_ICON_VERSION}`, sizes: '32x32' },
+        { rel: 'icon', type: 'image/webp', href: `/favicon-64x64.webp?v=${BRAND_ICON_VERSION}`, sizes: '64x64' },
+        { rel: 'icon', type: 'image/webp', href: `/favicon-192x192.webp?v=${BRAND_ICON_VERSION}`, sizes: '192x192' },
+        { rel: 'apple-touch-icon', href: `/apple-touch-icon.png?v=${BRAND_ICON_VERSION}` },
         { rel: 'alternate', type: 'application/rss+xml', title: 'Blog Sony Christanto', href: '/feed.xml' },
       ],
       meta: [{ name: 'theme-color', content: '#F4F3F0' }],
