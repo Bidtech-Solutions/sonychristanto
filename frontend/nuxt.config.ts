@@ -65,10 +65,10 @@ export default defineNuxtConfig({
   app: {
     head: {
       link: [
-        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico', sizes: '16x16 32x32 48x48' },
-        { rel: 'icon', type: 'image/png', href: '/favicon-32x32.png', sizes: '32x32' },
-        { rel: 'icon', type: 'image/png', href: '/favicon-64x64.png', sizes: '64x64' },
+        { rel: 'icon', type: 'image/webp', href: '/favicon-32x32.webp', sizes: '32x32' },
+        { rel: 'icon', type: 'image/webp', href: '/favicon-64x64.webp', sizes: '64x64' },
+        { rel: 'icon', type: 'image/webp', href: '/favicon-192x192.webp', sizes: '192x192' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
         { rel: 'alternate', type: 'application/rss+xml', title: 'Blog Sony Christanto', href: '/feed.xml' },
       ],

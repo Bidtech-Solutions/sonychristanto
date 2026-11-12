@@ -37,7 +37,7 @@ export const site = {
     glance: { src: '/images/sony/melirik.webp', width: 548, height: 1080, alt: { id: 'Sony Christanto bersedekap sambil melirik ke samping', en: 'Sony Christanto with arms crossed, glancing sideways' } as L },
     writing: { src: '/images/sony/blog.webp', width: 650, height: 1080, alt: { id: 'Sony Christanto melihat jam tangannya', en: 'Sony Christanto checking his watch' } as L },
   },
-  logo: '/images/logo/logo-sony-christanto.svg',
+  logo: '/images/logo/logo-sony-christanto-512.webp',
   ogImage: '/images/og-default.jpg',
   contact: {
     email: 'sony.c.batam@gmail.com',

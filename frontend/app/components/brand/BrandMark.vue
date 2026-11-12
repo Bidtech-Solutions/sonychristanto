@@ -1,12 +1,12 @@
 <script setup lang="ts">
-// Logo icon (DESIGN.md §10a), served as cached SVG files generated from
-// app/assets/brand/logo-paths.ts by `npm run brand:build`.
-import type { LogoVariant } from '~/assets/brand/logo-paths'
-
-const props = withDefaults(defineProps<{ size?: number; variant?: LogoVariant; alt?: string }>(), { size: 52, variant: 'red', alt: '' })
-const src = computed(() => `/images/logo/logo-sony-christanto${props.variant === 'red' ? '' : `-${props.variant}`}.svg`)
+// Logo "Sahabat Sony" (DESIGN.md §10a), WebP generated from
+// app/assets/brand/logo-source.jpeg by `npm run brand:build`.
+const props = withDefaults(defineProps<{ size?: number; alt?: string }>(), { size: 52, alt: '' })
+const base = '/images/logo/logo-sony-christanto'
+const src = computed(() => `${base}-${props.size > 64 ? 256 : 128}.webp`)
+const srcset = `${base}-128.webp 128w, ${base}-256.webp 256w, ${base}-512.webp 512w`
 </script>
 
 <template>
-  <img :src="src" :alt="alt" :width="size" :height="size" class="block shrink-0" decoding="async" />
+  <img :src="src" :srcset="srcset" :sizes="`${size}px`" :alt="alt" :width="size" :height="size" class="block shrink-0" decoding="async" />
 </template>

@@ -1,20 +1,21 @@
-// Generates brand files from app/assets/brand/logo-paths.ts (single source)
-// and placeholder images for photos that still have to come from the design.
+// Generates brand files from app/assets/brand/logo-source.jpeg (single source,
+// "Sahabat Sony" badge) and placeholder images for photos that still have to
+// come from the design.
 //
 //   npm run brand:build            logos + favicon + missing placeholders
 //   npm run brand:build -- --force also overwrite existing placeholders
 //
 // Placeholders are ONLY written when the target file does not exist, so real
 // photos dropped into public/images/** are never overwritten (without --force).
-// Requires Node >= 22.18 (native TypeScript type stripping for the .ts import).
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
-import { logoSvg } from '../app/assets/brand/logo-paths.ts'
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..', 'public')
+const here = dirname(fileURLToPath(import.meta.url))
+const root = join(here, '..', 'public')
+const SOURCE = join(here, '..', 'app', 'assets', 'brand', 'logo-source.jpeg')
 const force = process.argv.includes('--force')
 const out = (p) => join(root, p)
 async function write(p, data) {
@@ -24,23 +25,116 @@ async function write(p, data) {
 }
 
 // ------------------------------------------------------------------ logos
-for (const v of ['red', 'mono', 'on-red']) {
-  const name = v === 'red' ? 'logo-sony-christanto' : `logo-sony-christanto-${v}`
-  await write(`images/logo/${name}.svg`, logoSvg(v, 512))
-}
-await write('images/logo/logo-sony-christanto-512.png', await sharp(Buffer.from(logoSvg('red', 512))).png().toBuffer())
-await write('apple-touch-icon.png', await sharp(Buffer.from(logoSvg('red', 180))).flatten({ background: '#F4F3F0' }).png().toBuffer())
-
-// Favicon: logo bulat yang sama dengan desain (Logo.dc.html, versi 64/32/16 px).
-// SVG untuk browser modern, ICO (16/32/48) + PNG 32/64 untuk sisanya.
-const faviconPng = (n) => sharp(Buffer.from(logoSvg('red', 512))).resize(n, n).png().toBuffer()
-await write('favicon.svg', logoSvg('red', 64))
-await write('favicon-32x32.png', await faviconPng(32))
-await write('favicon-64x64.png', await faviconPng(64))
+// The source is a JPEG on white. The badge also contains white (outlines, the
+// band inside the shield) that touches the page white, so a plain flood fill
+// would eat it. Instead: morphological closing of the non-white mask (dilate
+// R px, flood the outside, erode R px) — everything inside the closed
+// silhouette keeps its original colour, only the outer page becomes transparent.
+const { data: px, info } = await sharp(SOURCE).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+const W = info.width
+const H = info.height
 {
-  // ICO berisi PNG (didukung semua browser modern): header 6 byte + 16 byte per gambar.
+  const R = 28
+  const N = W * H
+  const white = (p) => px[p * 4] > 228 && px[p * 4 + 1] > 228 && px[p * 4 + 2] > 228
+  // Chamfer (3-4) distance to the nearest pixel where seed(p) is true; result / 3 ≈ px.
+  const distance = (seed) => {
+    const d = new Float32Array(N)
+    for (let p = 0; p < N; p++) d[p] = seed(p) ? 0 : 1e9
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const p = y * W + x
+      if (x > 0) d[p] = Math.min(d[p], d[p - 1] + 3)
+      if (y > 0) {
+        d[p] = Math.min(d[p], d[p - W] + 3)
+        if (x > 0) d[p] = Math.min(d[p], d[p - W - 1] + 4)
+        if (x < W - 1) d[p] = Math.min(d[p], d[p - W + 1] + 4)
+      }
+    }
+    for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
+      const p = y * W + x
+      if (x < W - 1) d[p] = Math.min(d[p], d[p + 1] + 3)
+      if (y < H - 1) {
+        d[p] = Math.min(d[p], d[p + W] + 3)
+        if (x < W - 1) d[p] = Math.min(d[p], d[p + W + 1] + 4)
+        if (x > 0) d[p] = Math.min(d[p], d[p + W - 1] + 4)
+      }
+    }
+    return d
+  }
+  const toInk = distance((p) => !white(p))
+  // Flood the dilated outside from the image border.
+  const outside = new Uint8Array(N)
+  const stack = []
+  for (let x = 0; x < W; x++) stack.push(x, (H - 1) * W + x)
+  for (let y = 0; y < H; y++) stack.push(y * W, y * W + W - 1)
+  while (stack.length) {
+    const p = stack.pop()
+    if (outside[p] || toInk[p] <= R * 3) continue
+    outside[p] = 1
+    const x = p % W
+    if (x > 0) stack.push(p - 1)
+    if (x < W - 1) stack.push(p + 1)
+    if (p >= W) stack.push(p - W)
+    if (p < N - W) stack.push(p + W)
+  }
+  // Erode back by R; the last ~1.5 px fade out for an anti-aliased edge.
+  const toOut = distance((p) => outside[p] === 1)
+  for (let p = 0; p < N; p++) {
+    const t = (toOut[p] / 3 - R) / 1.5
+    px[p * 4 + 3] = Math.round(Math.max(0, Math.min(1, t)) * 255)
+  }
+}
+const raw = { raw: { width: W, height: H, channels: 4 } }
+const trimmed = await sharp(px, raw).trim({ threshold: 1 }).png().toBuffer({ resolveWithObject: true })
+const side = Math.round(Math.max(trimmed.info.width, trimmed.info.height) * 1.03)
+const clear = { r: 0, g: 0, b: 0, alpha: 0 }
+const badge = await sharp(trimmed.data)
+  .extend({
+    top: Math.floor((side - trimmed.info.height) / 2), bottom: Math.ceil((side - trimmed.info.height) / 2),
+    left: Math.floor((side - trimmed.info.width) / 2), right: Math.ceil((side - trimmed.info.width) / 2),
+    background: clear,
+  })
+  .png().toBuffer()
+
+const badgeAt = (n) => sharp(badge).resize(n, n)
+const webp = (img) => img.webp({ quality: 85, alphaQuality: 95, effort: 6 }).toBuffer()
+
+for (const n of [128, 256, 512]) await write(`images/logo/logo-sony-christanto-${n}.webp`, await webp(badgeAt(n)))
+
+// Square social/print version on white (badge at 72% so a circular avatar crop keeps it whole).
+const social = async (mono) => {
+  const inner = Math.round(1080 * 0.72)
+  let img = sharp({ create: { width: 1080, height: 1080, channels: 3, background: '#FFFFFF' } })
+    .composite([{ input: await badgeAt(inner).png().toBuffer(), gravity: 'centre' }])
+  if (mono) img = sharp(await img.png().toBuffer()).grayscale()
+  return webp(img)
+}
+await write('images/logo/logo-bulat-sony-christanto.webp', await social(false))
+await write('images/logo/logo-bulat-sony-christanto-mono.webp', await social(true))
+
+// iOS fills transparency with black, so the touch icon sits on white.
+await write('apple-touch-icon.png', await sharp({ create: { width: 180, height: 180, channels: 3, background: '#FFFFFF' } })
+  .composite([{ input: await badgeAt(164).png().toBuffer(), gravity: 'centre' }]).png().toBuffer())
+
+// Favicon: the full badge is unreadable at 16–64 px, so the small sizes use
+// the face cropped into a round disc; 192 px (Android/PWA) uses the badge.
+const FACE = { left: 450, top: 250, width: 580, height: 580 } // in source pixels
+const faceDisc = await (async () => {
+  const s = FACE.width
+  const mask = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}"><circle cx="${s / 2}" cy="${s / 2}" r="${s / 2}"/></svg>`)
+  const face = await sharp(px, raw).extract(FACE).png().toBuffer()
+  return sharp({ create: { width: s, height: s, channels: 4, background: '#9B181B' } })
+    .composite([{ input: face }, { input: mask, blend: 'dest-in' }])
+    .png().toBuffer()
+})()
+const faceAt = (n) => sharp(faceDisc).resize(n, n)
+await write('favicon-32x32.webp', await webp(faceAt(32)))
+await write('favicon-64x64.webp', await webp(faceAt(64)))
+await write('favicon-192x192.webp', await webp(badgeAt(192)))
+{
+  // ICO (fallback for /favicon.ico requests) holds PNGs: 6-byte header + 16 bytes per image.
   const sizes = [16, 32, 48]
-  const pngs = await Promise.all(sizes.map(faviconPng))
+  const pngs = await Promise.all(sizes.map((n) => faceAt(n).png().toBuffer()))
   const head = Buffer.alloc(6 + 16 * sizes.length)
   head.writeUInt16LE(1, 2)
   head.writeUInt16LE(sizes.length, 4)
