@@ -50,7 +50,7 @@ const mast = ['Sony', 'Christanto']
 </script>
 
 <template>
-  <section ref="root" class="panel h-[820px] bg-stone md:h-[868px]">
+  <section ref="root" class="panel h-[838px] bg-stone md:h-[908px]">
     <div data-topbar data-intro><SiteHeader variant="hero" /></div>
 
     <!-- Masthead (one <h1> per page) -->
@@ -63,8 +63,8 @@ const mast = ['Sony', 'Christanto']
     <LightGrid class="absolute left-1/2 top-[22%] z-[1] h-[46%] w-[min(520px,70vw)] -translate-x-1/2" :cols="3" :rows="3" :blur="22" :opacity="0.22" :rotate="-6" interactive />
 
     <!-- Cover star -->
-    <div data-shadow data-intro aria-hidden="true" class="absolute bottom-[46px] left-1/2 z-[2] h-10 w-[300px] -translate-x-1/2 rounded-[50%] bg-black/20 blur-[14px] md:bottom-[52px]" />
-    <div ref="figure" data-intro class="absolute bottom-[56px] left-1/2 z-[3] h-[600px] -translate-x-1/2 md:bottom-[68px] md:h-[720px]">
+    <div data-shadow data-intro aria-hidden="true" class="absolute bottom-[64px] left-1/2 z-[2] h-10 w-[300px] -translate-x-1/2 rounded-[50%] bg-black/20 blur-[14px] md:bottom-[92px]" />
+    <div ref="figure" data-intro class="absolute bottom-[74px] left-1/2 z-[3] h-[600px] -translate-x-1/2 md:bottom-[108px] md:h-[720px]">
       <img :src="cut.src" :alt="tx(cut.alt)" :width="cut.width" :height="cut.height" fetchpriority="high" decoding="async" class="h-full w-auto max-w-none object-contain drop-shadow-[0_26px_34px_rgba(0,0,0,0.14)]" />
     </div>
 
